@@ -25,6 +25,5 @@ int main() {
 	std::thread t2(&cons);
 	t1.join();
 	t2.join();
-	system("pause");
 	return 0;
 }

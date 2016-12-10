@@ -61,21 +61,28 @@ bool outstandingHazardPointersFor(void* p) {
 }
 
 template<typename T>
-void doDelete(void* p) {
+void doDelete(void* p)
+{
 	delete static_cast<T*>(p);
 }
 
-struct DataToReclaim {
+struct DataToReclaim
+{
 	void* data;
+	std::function<void(void*)> deleter;
 	DataToReclaim* next;
 
-	DataToReclaim(void* p)
-		: data(p)
-		, next(nullptr)
+	template<typename T>
+	DataToReclaim(T* p)
+			: data(p)
+			, deleter(&doDelete<T>)
+			, next(nullptr)
 	{}
 
 	~DataToReclaim()
-	{}
+	{
+		deleter(data);
+	}
 };
 
 std::atomic<DataToReclaim*> nodesToReclaim;
@@ -87,18 +94,18 @@ void addToReclaimList(DataToReclaim* node)
 }
 
 template<typename T>
-void reclaimLater(T* data) {
+void reclaimLater(T* data)
+{
 	addToReclaimList(new DataToReclaim(data));
 }
 
-template<typename T>
 void deleteNodesWithNoHazards()
 {
 	DataToReclaim* current = nodesToReclaim.exchange(nullptr);
 	while (current) {
 		DataToReclaim* const next = current->next;
 		if (!outstandingHazardPointersFor(current->data)) {
-			delete static_cast<T*>(current->data);
+			delete current;
 		}
 		else {
 			addToReclaimList(current);
@@ -178,7 +185,7 @@ public:
 			else {
 				delete static_cast<Node*>(hp.get());
 			}
-			deleteNodesWithNoHazards<Node>();
+			deleteNodesWithNoHazards();
 		}
 		return true;
 	}
