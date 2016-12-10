@@ -2,7 +2,7 @@
 #include <iostream>
 
 lock_free_queue<int> s;
-const int size = 1000;
+const int size = 100000;
 
 void prod() {
 	for (int i = 0; i < size; ++i) {
