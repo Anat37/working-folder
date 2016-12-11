@@ -3,62 +3,55 @@
 #include <atomic>
 #include <thread>
 #include <exception>
+#include <iostream>
 
 unsigned const MAX_HAZARD_POINTERS = 100;
 
 struct HazardPointer {
 	std::atomic<std::thread::id> id;
-	void* pointer;
+	std::atomic<void*> pointer;
 };
 static HazardPointer g_hazardPointers[MAX_HAZARD_POINTERS];
 
-class HPOwner
-{
+class HPOwner {
 public:
 	HazardPointer* hp;
+	void* ptr;
 	HPOwner(const HPOwner&) = delete;
 	HPOwner operator=(const HPOwner&) = delete;
 
 	HPOwner()
 		: hp(nullptr)
-	{
+		, ptr(nullptr) {
 		for (unsigned i = 0; i < MAX_HAZARD_POINTERS; ++i) {
 			std::thread::id oldId;
 			if (g_hazardPointers[i].id.compare_exchange_strong(
 				oldId, std::this_thread::get_id())) {
-				hp = &g_hazardPointers[i];
-				ind_ = i;
+				hp = g_hazardPointers + i;
 				break;
 			}
 		}
+
 	}
 
-	void* get() {
-		return hp->pointer;
-	}
-
-	void set(void* ptr) {
-		hp->pointer = ptr;
+	template<typename T>
+	void save(std::atomic<T*>& p) {
+		T* pt = p.load();
+		hp->pointer.store(pt);
+		while(!p.compare_exchange_strong(pt, static_cast<T*>(hp->pointer.load()))) {
+			hp->pointer.store(pt);
+		}
+		ptr = pt;
 	}
 
 	~HPOwner()
 	{
-		hp->pointer = nullptr;
+		hp->pointer.store(nullptr);
 		hp->id.store(std::thread::id());
 	}
-
-private:
-	size_t ind_;
 };
 
-bool outstandingHazardPointersFor(void* p) {
-	for (unsigned i = 0; i < MAX_HAZARD_POINTERS; ++i) {
-		if (g_hazardPointers[i].pointer == p) {
-			return true;
-		}
-	}
-	return false;
-}
+
 
 struct DataToReclaim
 {
@@ -74,12 +67,12 @@ struct DataToReclaim
 	~DataToReclaim(){}
 };
 
-std::atomic<DataToReclaim*> nodesToReclaim;
+std::atomic<DataToReclaim*> nodesToReclaim(nullptr);
 
 void addToReclaimList(DataToReclaim* node)
 {
 	node->next = nodesToReclaim.load();
-	while (!nodesToReclaim.compare_exchange_weak(node->next, node));
+	while (!nodesToReclaim.compare_exchange_strong(node->next, node));
 }
 
 template<typename T>
@@ -88,96 +81,97 @@ void reclaimLater(T* data)
 	addToReclaimList(new DataToReclaim(data));
 }
 
-template<typename T>
-void deleteNodesWithNoHazards()
-{
-	DataToReclaim* current = nodesToReclaim.exchange(nullptr);
-	while (current) {
-		DataToReclaim* const next = current->next;
-		if (!outstandingHazardPointersFor(current->data)) {
-			delete static_cast<T*>(current->data);
-			delete current;
-		}
-		else {
-			addToReclaimList(current);
-		}
-		current = next;
-	}
-}
+
 
 template<typename T>
 class lock_free_queue {
 public:
 	lock_free_queue() {
-		/*for (unsigned i = 0; i < MAX_HAZARD_POINTERS; ++i) {
-			g_hazardPointers[i][0].id.store(std::thread::id::id());
-			g_hazardPointers[i][1].id.store(std::thread::id::id());
-		}*/
 		Node* nod = new Node(nullptr);
-		(*nod).next = nullptr;
+		nod->next.store(nullptr);
 		tail_ = nod;
 		head_ = nod;
+		start_head = nod;
+	}
+
+	bool outstandingHazardPointersFor(void* p) {
+		for (unsigned i = 0; i < MAX_HAZARD_POINTERS; ++i) {
+			if (g_hazardPointers[i].pointer.load() == p) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	void deleteNodesWithNoHazards()
+	{
+		DataToReclaim* current = nodesToReclaim.exchange(nullptr);
+		while (current) {
+			DataToReclaim* const next = current->next;
+			if (!outstandingHazardPointersFor(current->data)) {
+                Node* p = static_cast<Node*>(current->data);
+				delete p;
+                current->data = nullptr;
+				delete current;
+			} else {
+				addToReclaimList(current);
+			}
+			current = next;
+		}
 	}
 
 	void enqueue(T data) {
 		T* dat = new T();
 		*dat = data;
-		
+
 		Node* const newNode = new Node(dat);
-		HPOwner hp;
+		Node* hp;
 		//std::cout << data << std::endl;
 		while (true) {
-			hp.set(tail_);
-			Node* pNext = static_cast<Node*>(hp.get())->next;
+			HPOwner guard;
+			guard.save(tail_);
+			hp = static_cast<Node*>(guard.ptr);
+			Node* pNext = hp->next.load();
 			if (pNext != nullptr) {
-				Node* p = static_cast<Node*>(hp.get());
-				tail_.compare_exchange_weak(p, p->next);
+				tail_.compare_exchange_weak(hp, hp->next);
 				continue;
 			}
 			else {
-				if (static_cast<Node*>(hp.hp->pointer)->next.compare_exchange_strong(pNext, newNode)) {
+				if (hp->next.compare_exchange_strong(pNext, newNode)) {
 					break;
 				}
 			}
 		}
-		Node* p = static_cast<Node*>(hp.get());
-		tail_.compare_exchange_strong(p, newNode);
-		hp.set(nullptr);
+		tail_.compare_exchange_strong(hp, newNode);
 	}
 
 	bool dequeue(T& res) {
-		HPOwner hp;
-		HPOwner pNext;
+		Node* hp;
 		while (true) {
-			hp.set(head_);
-			pNext.set(static_cast<Node*>(hp.get())->next);
-			if (head_.load() != hp.get()) {
+			HPOwner guard1;
+			guard1.save(head_);
+			hp = static_cast<Node*>(guard1.ptr);
+			HPOwner guard2;
+			guard2.save(hp->next);
+			Node* pNext = static_cast<Node*>(guard2.ptr);
+			if (head_.load() != hp) {
 				continue;
 			}
-			if (pNext.get() == nullptr)
+			if (pNext == nullptr)
 				return false;
-			Node* t = tail_.load();
-			if (hp.get() == t) {
-				tail_.compare_exchange_strong(t, static_cast<Node*>(pNext.get()));
+			if (hp == tail_.load()) {
+				tail_.compare_exchange_strong(hp, pNext);
 				continue;
 			}
-			Node* p = static_cast<Node*>(hp.get());
-			if (head_.compare_exchange_strong(p, static_cast<Node*>(pNext.get()))) {
-				res = *static_cast<Node*>(pNext.get())->data;
-				delete static_cast<Node*>(pNext.get())->data;
+			if (head_.compare_exchange_strong(hp, pNext)) {
+				res = *pNext->data;
+				delete pNext->data;
+				pNext->data = nullptr;
 				break;
 			}
 		}
-		pNext.set(nullptr);
-		if (hp.get()) {
-			if (outstandingHazardPointersFor(hp.get())) {
-				reclaimLater(hp.get());
-			}
-			else {
-				delete static_cast<Node*>(hp.get());
-			}
-			deleteNodesWithNoHazards<Node>();
-		}
+		reclaimLater(hp);
+		deleteNodesWithNoHazards();
 		return true;
 	}
 	
@@ -189,8 +183,25 @@ public:
 
 		T* data;
 		std::atomic<Node*> next;
+
+		~Node() {
+			if (data != nullptr) {
+				delete data;
+			}
+		}
 	};
+
+	~lock_free_queue() {
+		deleteNodesWithNoHazards();
+		Node* current = head_.load();
+		while(current) {
+			Node* tmp = current->next.load();
+			delete current;
+			current = tmp;
+		}
+	}
 private:
+	Node* start_head;
 	std::atomic<Node*> head_;
 	std::atomic<Node*> tail_;
 };
