@@ -1,5 +1,6 @@
 #pragma once
 #include<exception>
+#include<math.h>
 typedef long double ld;
 
 struct Point3 {
