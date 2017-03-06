@@ -29,7 +29,7 @@ int Screen::getPixY() {
 }
 
 Point3 Screen::getPixel(int x, int y) {
-	return x*_deltX + y*_deltY;
+	return _location + x*_deltX + y*_deltY;
 }
 
 void Screen::setXAxis(Point3 x) {

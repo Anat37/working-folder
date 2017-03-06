@@ -7,20 +7,12 @@ Object3::Object3() {}
 Object3::Object3(Point3 loc)
 				:Located(loc) {}
 
-
 Object3::~Object3() {}
 
+ColoredPoint3::ColoredPoint3(ld x, ld y, ld z, Color clr)
+	:Point3({ x,y,z })
+	, color(clr) {}
 
-bool Object3::isInterceptLine(Line ray) {
-	return false;
-}
-
-Color Object3::getColorOfInterception(Line ray)
-{
-	return Color(255, 0, 0, 0);
-}
-
-
-ld Object3::getSurface() {
-	return ld();
-}
+ColoredPoint3::ColoredPoint3(Point3 p, Color clr)
+	:Point3(p) 
+	,color(clr) {}

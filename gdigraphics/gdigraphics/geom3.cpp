@@ -2,14 +2,14 @@
 #include<exception>
 #include"geom3.h"
 
-const long double eps = 1e-10;
+const long double eps = 1e-20;
 
 ld Point3::len2() const {
 	return x*x + y*y + z*z;
 }
 
 Point3 operator*(Point3 a, Point3 b) {
-	return{ a.y*b.z - a.z*b.y, a.x*b.z - a.z*b.x, a.x*b.y - a.y*b.x };
+	return{ a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x };
 }
 
 Point3 operator*(ld a, Point3 b) {

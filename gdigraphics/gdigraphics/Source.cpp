@@ -1,16 +1,20 @@
 //#include <stdafx.h>
 #include"glibs.h"
 #include"scene.h"
+#include"Triangle.h"
 
 VOID OnPaint(HDC hdc)
 {
 	Graphics graphics(hdc);
 	Pen      pen(Color(255, 0, 0, 255));
-	int sy = 800;
-	int sx = 160;
-	Viewer cam({ 0., 10., 10.}, { 0., 0., 0.});
-	Screen scr({ 10., 10., 10. }, { 0. ,1. ,0. }, {0., 0., 1.}, 20., 20., sx, sy);
-	Scene scen;
+	int sy = 900;
+	int sx = 1000;
+	Viewer cam({ 0., 5., 5.}, { 0., 0., 0.});
+	Screen scr({ 10., 0., 10. }, { 0. ,1. ,0. }, {0., 0., -1.}, 10., 10., sx, sy);
+	Triangle* triag1 = new Triangle({ 11.,0.,0. }, { 18.,3.,0. }, { 0.,0.,5. }, { 0.,5.,0. }, Color(255, 70, 255, 70));
+	Triangle* triagf1 = new Triangle({ 0.,0.,0. }, { 0.,0.,0. }, { 100.,-100.,0. }, { 100.,100.,0. }, Color(255, 255, 255, 255));
+	Triangle* triagf2 = new Triangle({ 1.,1.,0. }, { 19.,5.,0. }, { 0.,0.,5. }, { 0.,-5.,0. }, Color(255, 255, 70, 70));
+	Scene scen({ triag1, triagf1, triagf2 }, {});
 	auto arr = scen.render(scr, cam);
 	Bitmap myBitmap(sx, sy, sx * 4, PixelFormat32bppARGB, (BYTE*)arr);
 	/*for (int i = 0; i < sy; ++i)
@@ -18,6 +22,9 @@ VOID OnPaint(HDC hdc)
 			myBitmap.SetPixel(j, i, arr[i][j]);
 	*/
 	// Draw the bitmap.
+	delete triag1;
+	delete triagf1;
+	delete triagf2;
 	graphics.DrawImage(&myBitmap, 0, 0);
 }
 
