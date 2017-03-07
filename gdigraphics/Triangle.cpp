@@ -4,12 +4,12 @@
 
 Triangle::Triangle() {}
 
-Triangle::Triangle(Point3 loc, Point3 p1, Point3 e1, Point3 e2, Color col)
+Triangle::Triangle(Point3 p1, Point3 e1, Point3 e2, Surface surf)
 	:_vertex1(p1)
 	,_edge1(e1)
 	,_edge2(e2)
-	,_clr(col){
-	setLocation(loc);
+	,_surf(surf){
+	setLocation(p1);
 }
 
 ld Triangle::isIntercectLine(Line ray) {
@@ -48,11 +48,11 @@ ld Triangle::isIntercectLine(Line ray) {
 	return -1;
 }
 
-Color Triangle::getColorOfIntercection(Line ray) {
-	return _clr;
+Surface Triangle::getSurfaceOfIntercection(Line ray) {
+	return _surf;
 }
 
-ld Triangle::getSurface() {
+ld Triangle::getArea() {
 	return sqrtl((_edge1*_edge2).len2());
 }
 

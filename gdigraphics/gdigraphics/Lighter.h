@@ -1,13 +1,16 @@
 #pragma once
 #include "Located.h"
-class Lighter :
-	public Located
-{
+#include"object3.h"
+#include"glibs.h"
+
+class Lighter :public Located {
 public:
 	Lighter();
-	Lighter(Point3 loc, ld intens);
+	Lighter(Point3 loc, Surface lt);
+	virtual Line directionFrom(SurfacedPoint3 p) = 0;
+	virtual Color colorOfPoint(SurfacedPoint3 p) = 0;
 	~Lighter();
 private:
-	ld _intensity;
+	Surface _attr;
 };
 

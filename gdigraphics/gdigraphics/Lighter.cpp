@@ -2,13 +2,12 @@
 
 
 
-Lighter::Lighter()
-{
+Lighter::Lighter(){
 }
 
-Lighter::Lighter(Point3 loc, ld intens) 
+Lighter::Lighter(Point3 loc, Surface lt) 
 	:Located(loc)
-	,_intensity(intens) {}
+	,_attr(lt) {}
 
 
 Lighter::~Lighter() {}

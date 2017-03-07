@@ -9,10 +9,13 @@ Object3::Object3(Point3 loc)
 
 Object3::~Object3() {}
 
-ColoredPoint3::ColoredPoint3(ld x, ld y, ld z, Color clr)
+SurfacedPoint3::SurfacedPoint3(ld x, ld y, ld z, Surface sur, Point3 nrm)
 	:Point3({ x,y,z })
-	, color(clr) {}
+	,surface(sur)
+	,norm(nrm) {}
 
-ColoredPoint3::ColoredPoint3(Point3 p, Color clr)
+SurfacedPoint3::SurfacedPoint3(Point3 p, Surface sur, Point3 nrm)
 	:Point3(p) 
-	,color(clr) {}
+	,surface(sur)
+	,norm(nrm) {}
+
