@@ -13,5 +13,3 @@ public:
 	long double glance;
 };
 
-Surface Black;
-

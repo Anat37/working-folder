@@ -1,40 +1,31 @@
-﻿6 / -5
-2 * 2 <> 5 // val it : bool = true
-2 = "два"
-333333333333333333333333333333333333333333333333333333333333333I
-6. / 5. 
-6. / 5. // val it : float = 1.2
-42 + 3.4
-1.1 + (float 2)
-9. - v
-2. + max 2.5 5.6 + min 3.4 (max 2.3 4.5)
-2 - 2 - 2
-let inc x = x + 1
-inc 1
-let dec x = x - 1
-// let dec x = x - 1. // -.
-let rec fac n = if n = 0 then 1 else n * fac (dec n)
-fac 5
-let square x = x * x
-let squareIfLess5 x = if x < 5 then square x else x
-let square (x:float) = x * x
-let squareIfLess5 x = if x < 5. then square x else x
-let m = "Марьванна" // val it : string = "Марьванна"
-let h = "Hello"
-let hm  = h + " " + m
-(-) 3 4
-let add x y = x + y
-2 |>add<| 2
-let (++) x y = x + y
-let lostNumbers = [4;8;15;16;23;42]
-let cards = [3; 7; 12]
+﻿open System
+open System.Net
+open System.Collections.Specialized
 
-let mix = lostNumbers @ cards
-List.concat [[1;2;3];[4;5]]
+let (email, name) = ("kozlof9@yandex.ru", "Козлов А.А.")
 
-let lostNumbers = [13;666]
-[1; "Гарри Поттер"; 16.5]
-[]
-let fcards = 1 :: cards
-[[1; 2]; [3; 4]] @ [[5; 6]]
-[[1; 2]; [3; 4]]
+let rec pascal c r =
+    if (c = 0 || r = 0 || c = r) 
+        then 1
+        else pascal c (r-1) + pascal (c-1) (r-1) 
+
+let printIt n = 
+  "[" +
+  ([for x in 0..n do for y in 0..x do yield pascal y x] 
+    |> List.map (fun x -> x.ToString())
+    |> List.reduce (fun x y -> x + "," + y) )
+  + "]"
+
+let main () = 
+  let values = new NameValueCollection()
+  values.Add("email", email)
+  values.Add("name", name)
+  values.Add("content", printIt 20)
+
+  let client = new WebClient()
+  let response = client.UploadValues(new Uri("http://91.239.142.110:13666/lab0"), values)
+  let responseString = Text.Encoding.Default.GetString(response)
+
+  printf "%A\n" responseString
+
+main()

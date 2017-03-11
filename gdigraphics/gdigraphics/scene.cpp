@@ -31,16 +31,27 @@ Color* Scene::render(Screen screen, Viewer viewer) {
 }
 
 Scene::~Scene() {
+	for (int i = 0; i < _objects.size(); ++i) {
+		delete _objects[i];
+	}
+	for (int i = 0; i < _lighters.size(); ++i) {
+		delete _lighters[i];
+	}
 }
 
 Color Scene::getLighting(SurfacedPoint3 p) {
-	Color total(0,0,0,0);
+	Color total(255,0,0,0);
+	if (isZeroPoint(p))
+		return total;
 	for (unsigned int i = 0; i < _lighters.size(); ++i) {
 		Line ray = _lighters[i]->directionFrom(p);
-		int inter = isIntercected(ray);
-		if (inter != -1) {
+		int inter = -1;
+		if (!isZeroRay(ray))
+			isIntercected(ray);
+		if (inter == -1) {
 			Color curr = _lighters[i]->colorOfPoint(p);
-			total = Color(curr.GetRed() + total.GetRed(),
+			total = Color(curr.GetAlpha() + total.GetAlpha(),
+				curr.GetRed() + total.GetRed(),
 				curr.GetGreen() + total.GetGreen(),
 				curr.GetBlue() + total.GetBlue());
 		}
@@ -60,16 +71,16 @@ int Scene::isIntercected(Line ray) {
 SurfacedPoint3 Scene::getClosestIntercection(Line ray) {
 	ld min_dist = std::numeric_limits<double>::infinity();
 	ld curr_dist;
-	Surface clr;
+	SurfacedPoint3 clr = SurfacedPoint3();
 	for (unsigned int j = 0; j < _objects.size(); ++j) {
 		curr_dist = _objects[j]->isIntercectLine(ray);
 		if (sign(curr_dist) == 1 && curr_dist < min_dist) {
 			min_dist = curr_dist;
-			clr = _objects[j]->getSurfaceOfIntercection(ray);
+			clr = _objects[j]->getSurfaceOfLastIntercection(ray);
 		}
 	}
 	if (min_dist < std::numeric_limits<double>::infinity())
-		return { ray.a + min_dist * ray.b, clr };
+		return clr;
 	else
-		return { 0.,0.,0.,Black};
+		return SurfacedPoint3();
 }

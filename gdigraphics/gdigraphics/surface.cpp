@@ -10,11 +10,3 @@ Surface::Surface(lightAttr a, lightAttr d, lightAttr s, long double trans, long 
 	,specular(s)
 	,transparent(trans)
 	,glance(gl) {}
-
-Surface Black(
-	{0,0,0},
-	{0,0,0},
-	{0,0,0},
-	0,
-	0
-);

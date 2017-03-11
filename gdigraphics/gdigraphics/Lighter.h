@@ -10,7 +10,7 @@ public:
 	virtual Line directionFrom(SurfacedPoint3 p) = 0;
 	virtual Color colorOfPoint(SurfacedPoint3 p) = 0;
 	~Lighter();
-private:
+protected:
 	Surface _attr;
 };
 

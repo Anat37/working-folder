@@ -8,6 +8,10 @@ ld Point3::len2() const {
 	return x*x + y*y + z*z;
 }
 
+Point3 Point3::inverse() {
+	return{ -x, -y, -z };
+}
+
 Point3 operator*(Point3 a, Point3 b) {
 	return{ a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x };
 }
@@ -89,4 +93,18 @@ bool areSegmentsIntercept(Line s1, Line s2) {
 		return isOnSegment(s1, s2.a) || isOnSegment(s1, s2.b) || isOnSegment(s2, s1.a);
 	else
 		return doesSegmentsInterceptLine(s1, s2) && doesSegmentsInterceptLine(s2, s1);
+}
+
+bool isZeroPoint(Point3 p) {
+	if (isZero(p.x) && isZero(p.y) && isZero(p.z))
+		return true;
+	else 
+		return false;
+}
+
+bool isZeroRay(Line ray) {
+	if (isZeroPoint(ray.a) && isZeroPoint(ray.b))
+		return true;
+	else 
+		return false;
 }

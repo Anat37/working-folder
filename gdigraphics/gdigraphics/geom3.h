@@ -6,6 +6,7 @@ typedef long double ld;
 struct Point3 {
 	ld x, y, z;
 	ld len2() const;
+	Point3 inverse();
 };
 
 Point3 operator*(Point3 a, Point3 b);
@@ -31,6 +32,10 @@ bool areCollinear(Point3 p1, Point3 p2);
 struct Line {
 	Point3 a, b;
 };
+
+bool isZeroPoint(Point3 p);
+
+bool isZeroRay(Line ray);
 
 bool isOnLine(Line l, Point3 p1);
 

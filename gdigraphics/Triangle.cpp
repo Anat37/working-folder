@@ -4,11 +4,13 @@
 
 Triangle::Triangle() {}
 
-Triangle::Triangle(Point3 p1, Point3 e1, Point3 e2, Surface surf)
+Triangle::Triangle(Point3 p1, Point3 e1, Point3 e2, Point3 faceNorm, Surface faceSurf, Surface backSurf)
 	:_vertex1(p1)
 	,_edge1(e1)
 	,_edge2(e2)
-	,_surf(surf){
+	,_faceNormal(faceNorm)
+	,_faceSurface(faceSurf)
+	,_backSurface(backSurf){
 	setLocation(p1);
 }
 
@@ -41,19 +43,29 @@ ld Triangle::isIntercectLine(Line ray) {
 	if (v < 0.f || u + v  > 1.f) return -1;
 	t = (_edge2 ^ Q) * inv_det;
 
-	if (sign(t) == 1) //ray intersection
+	if (sign(t) == 1) { //ray intersection
+		if (sign(ray.b^_faceNormal) == -1) {
+			_lastPoint = { ray.a + t * ray.b, _faceSurface, _faceNormal };
+		} else {
+			_lastPoint = { ray.a + t * ray.b, _backSurface, _faceNormal.inverse() };
+		}
 		return t;
+	}
 
 	// No hit, no win
 	return -1;
 }
 
-Surface Triangle::getSurfaceOfIntercection(Line ray) {
-	return _surf;
+SurfacedPoint3 Triangle::getSurfaceOfLastIntercection(Line ray) {
+	return _lastPoint;
 }
 
 ld Triangle::getArea() {
 	return sqrtl((_edge1*_edge2).len2());
+}
+
+Point3 Triangle::getNormal(Point3 p) {
+	return _faceNormal;
 }
 
 Triangle::~Triangle() {}
