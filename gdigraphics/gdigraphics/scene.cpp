@@ -20,7 +20,6 @@ Scene::Scene(std::vector<Object3*>&& obj, std::vector<Lighter*>&& light)
 Color* Scene::render(Screen screen, Viewer viewer) {
 	int sizeX = screen.getPixX();
 	int sizeY = screen.getPixY();
-	std::vector<showcase> diffs;
 	Color* ptr = new Color[sizeY*sizeX];
 	for (int x = 0; x < sizeX; ++x)
 		for (int y = 0; y < sizeY; ++y) {
@@ -40,29 +39,28 @@ Scene::~Scene() {
 }
 
 Color Scene::getLighting(SurfacedPoint3 p) {
-	Color total(255,0,0,0);
+	Color total(0,0,0);
 	if (isZeroPoint(p))
 		return total;
 	for (unsigned int i = 0; i < _lighters.size(); ++i) {
 		Line ray = _lighters[i]->directionFrom(p);
 		int inter = -1;
 		if (!isZeroRay(ray))
-			isIntercected(ray);
+			inter = isIntercectedSegment(ray);
 		if (inter == -1) {
 			Color curr = _lighters[i]->colorOfPoint(p);
-			total = Color(curr.GetAlpha() + total.GetAlpha(),
-				curr.GetRed() + total.GetRed(),
-				curr.GetGreen() + total.GetGreen(),
-				curr.GetBlue() + total.GetBlue());
+			total = Color(cutColor(curr.GetRed() + total.GetRed()),
+				cutColor(curr.GetGreen() + total.GetGreen()),
+				cutColor(curr.GetBlue() + total.GetBlue()));
 		}
 	}
 	return total;
 }
 
-int Scene::isIntercected(Line ray) {
+int Scene::isIntercectedSegment(Line ray) {
 	for (unsigned int j = 0; j < _objects.size(); ++j) {
 		ld curr_dist = _objects[j]->isIntercectLine(ray);
-		if (sign(curr_dist) == 1) 
+		if (sign(curr_dist-0.99999) == -1 && curr_dist != -1) 
 			return j;
 	}
 	return -1;

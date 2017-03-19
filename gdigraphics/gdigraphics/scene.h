@@ -17,7 +17,7 @@ private:
 	std::vector<Lighter*> _lighters;
 
 	Color getLighting(SurfacedPoint3 p);
-	int isIntercected(Line ray);
+	int isIntercectedSegment(Line ray);
 	SurfacedPoint3 getClosestIntercection(Line ray);
 };
 

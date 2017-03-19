@@ -4,25 +4,26 @@
 #include"Triangle.h"
 #include"surfacelib.h"
 #include"AmbientLighter.h"
+#include"PointLighter.h"
 
 Scene construct(int sx, int sy) {
-	Viewer cam({ 0., 5., 5. }, { 0., 0., 0. });
-	Screen scr({ 10., 0., 10. }, { 0. ,1. ,0. }, { 0., 0., -1. }, 10., 10., sx, sy);
-	Triangle* triag1 = new Triangle({ 18.,3.,5. }, { 0.,0.,5. }, { 0.,5.,0. }, { -1.,0.,0. }, Red, Blue);
-	//Triangle* triagf1 = new Triangle({ 0.,0.,0. }, { 0.,0.,0. }, { 100.,-100.,0. }, { 100.,100.,0. }, Color(255, 255, 255, 255));
+
+	Triangle* triag1 = new Triangle({ 15.,3.,0. }, { 0.0,0.,5. }, { 0.,5.,0. }, { -1.,0.,0. }, Red, Blue);
+	Triangle* triagf1 = new Triangle({ 0.,3.,0. }, { 100.,-100.,0. }, { 100.,100.,0. }, { 0.,0.,1. }, White, White);
 	AmbientLighter* amb = new AmbientLighter({ 0,0,0 }, AmbL);
-	return Scene({ triag1}, {amb});
+	PointLighter* pwh1 = new PointLighter({ 10, 5, 10 }, PointLWhite);
+	return Scene({triag1, triagf1}, {amb, pwh1});
 }
 
 VOID OnPaint(HDC hdc)
 {
 	Graphics graphics(hdc);
 	Pen      pen(Color(255, 0, 0, 255));
-	int sy = 900;
-	int sx = 1000;
+	int sy = 500;
+	int sx = 500;
+	Scene scen = construct(sx, sy);
 	Viewer cam({ 0., 5., 5. }, { 0., 0., 0. });
 	Screen scr({ 10., 0., 10. }, { 0. ,1. ,0. }, { 0., 0., -1. }, 10., 10., sx, sy);
-	Scene scen = construct(sx, sy);
 	auto arr = scen.render(scr, cam);
 	Bitmap myBitmap(sx, sy, sx * 4, PixelFormat32bppARGB, (BYTE*)arr);
 	/*for (int i = 0; i < sy; ++i)
@@ -30,7 +31,7 @@ VOID OnPaint(HDC hdc)
 			myBitmap.SetPixel(j, i, arr[i][j]);
 	*/
 	// Draw the bitmap.
-	graphics.DrawImage(&myBitmap, 0, 0);
+	graphics.DrawImage(&myBitmap, 0, 0, sx, sy);
 }
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);

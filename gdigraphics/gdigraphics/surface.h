@@ -13,3 +13,5 @@ public:
 	long double glance;
 };
 
+short cutColor(long double val);
+
