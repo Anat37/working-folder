@@ -19,10 +19,12 @@ public:
 	Object3();
 	Object3(Point3 loc);
 	virtual ~Object3();
-	virtual ld isIntercectLine(Line ray) = 0;
+	virtual ld isIntercectLine(Line ray) const;
 	virtual SurfacedPoint3 getSurfaceOfLastIntercection(Line ray) = 0;
-	virtual ld getArea() = 0;
-	virtual Point3 getNormal(Point3 p) = 0;
+	virtual ld getArea() const;
+	virtual Point3 getNormal(Point3 p) const;
+	virtual ld getMax(int dim) const;
 protected:
 	SurfacedPoint3 _lastPoint;
+	ld _maxv[3];
 };

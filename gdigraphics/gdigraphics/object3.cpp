@@ -9,6 +9,10 @@ Object3::Object3(Point3 loc)
 
 Object3::~Object3() {}
 
+ld Object3::getMax(int dim) const{
+	return _maxv[dim];
+}
+
 SurfacedPoint3::SurfacedPoint3() 
 	:Point3({0,0,0})
 	,surface({ 0,0,0 },

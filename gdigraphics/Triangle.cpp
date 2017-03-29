@@ -11,6 +11,9 @@ Triangle::Triangle(Point3 p1, Point3 e1, Point3 e2, Point3 faceNorm, Surface fac
 	,_faceNormal(faceNorm)
 	,_faceSurface(faceSurf)
 	,_backSurface(backSurf){
+	_maxv[0] = max(max((p1 + e1).x, (p1 + e2).x), p1.x);
+	_maxv[1] = max(max((p1 + e1).y, (p1 + e2).x), p1.y);
+	_maxv[2] = max(max((p1 + e1).z, (p1 + e2).x), p1.z);
 	setLocation(p1);
 }
 
