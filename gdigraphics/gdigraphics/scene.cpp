@@ -18,13 +18,15 @@ Scene::Scene(std::vector<Object3*>&& obj, std::vector<Lighter*>&& light)
 	,_lighters(light){}
 
 Color* Scene::render(Screen screen, Viewer viewer) {
+	_tree.setObjects(_objects);
+	_tree.buildTree();
 	int sizeX = screen.getPixX();
 	int sizeY = screen.getPixY();
 	Color* ptr = new Color[sizeY*sizeX];
 	for (int x = 0; x < sizeX; ++x)
 		for (int y = 0; y < sizeY; ++y) {
 		Line ray{ screen.getPixel(x, y), screen.getPixel(x, y) - viewer.getLocation() };
-		ptr[x + y*sizeX] = getLighting(getClosestIntercection(ray));
+		ptr[x + y*sizeX] = getLighting(_tree.getClosestIntersection(ray));
 	}
 	return ptr;
 }
@@ -46,7 +48,7 @@ Color Scene::getLighting(SurfacedPoint3 p) {
 		Line ray = _lighters[i]->directionFrom(p);
 		int inter = -1;
 		if (!isZeroRay(ray))
-			inter = isIntercectedSegment(ray);
+			inter = _tree.isIntersectSegment(ray);
 		if (inter == -1) {
 			Color curr = _lighters[i]->colorOfPoint(p);
 			total = Color(cutColor(curr.GetRed() + total.GetRed()),
@@ -57,16 +59,16 @@ Color Scene::getLighting(SurfacedPoint3 p) {
 	return total;
 }
 
-int Scene::isIntercectedSegment(Line ray) {
+int Scene::isIntersectedSegment(Line ray) {
 	for (unsigned int j = 0; j < _objects.size(); ++j) {
 		ld curr_dist = _objects[j]->isIntercectLine(ray);
-		if (sign(curr_dist-0.99999) == -1 && curr_dist != -1) 
+		if (sign(curr_dist-(0.99999 * ray.b).len2()) == -1 && curr_dist != -1) 
 			return j;
 	}
 	return -1;
 }
 
-SurfacedPoint3 Scene::getClosestIntercection(Line ray) {
+SurfacedPoint3 Scene::getClosestIntersection(Line ray) {
 	ld min_dist = std::numeric_limits<double>::infinity();
 	ld curr_dist;
 	SurfacedPoint3 clr = SurfacedPoint3();

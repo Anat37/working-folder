@@ -17,7 +17,7 @@ Triangle::Triangle(Point3 p1, Point3 e1, Point3 e2, Point3 faceNorm, Surface fac
 	setLocation(p1);
 }
 
-ld Triangle::isIntercectLine(Line ray) {
+ld Triangle::isIntercectLine(Line ray){
 	ld inv_det, u, v, t;
 	//Begin calculating determinant - also used to calculate u parameter
 	Point3 P = ray.b * _edge2;
@@ -52,7 +52,7 @@ ld Triangle::isIntercectLine(Line ray) {
 		} else {
 			_lastPoint = { ray.a + t * ray.b, _backSurface, _faceNormal.inverse() };
 		}
-		return t;
+		return (t* ray.b).len2();
 	}
 
 	// No hit, no win
@@ -63,12 +63,34 @@ SurfacedPoint3 Triangle::getSurfaceOfLastIntercection(Line ray) {
 	return _lastPoint;
 }
 
-ld Triangle::getArea() {
+ld Triangle::getArea() const {
 	return sqrtl((_edge1*_edge2).len2());
 }
 
-Point3 Triangle::getNormal(Point3 p) {
+Point3 Triangle::getNormal(Point3 p) const{
 	return _faceNormal;
+}
+
+AABB3 Triangle::box() {
+	Point3 loc{
+		min(min((_location + _edge1).x, (_location + _edge2).x), _location.x),
+		min(min((_location + _edge1).y, (_location + _edge2).y), _location.y),
+		min(min((_location + _edge1).z, (_location + _edge2).z), _location.z)
+	};
+	Point3 edge1{
+		max(max((_location + _edge1).x, (_location + _edge2).x), _location.x) - loc.x,
+		0, 0	
+	};
+	Point3 edge2{
+		0,
+		max(max((_location + _edge1).y, (_location + _edge2).y), _location.y) - loc.y,
+		0
+	};
+	Point3 edge3{
+		0, 0,
+		max(max((_location + _edge1).z, (_location + _edge2).z), _location.z) - loc.z
+	};
+	return AABB3(loc, edge1, edge2, edge3);
 }
 
 Triangle::~Triangle() {}

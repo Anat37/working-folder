@@ -8,8 +8,9 @@ public:
 
 	ld isIntercectLine(Line ray);
 	SurfacedPoint3 getSurfaceOfLastIntercection(Line ray);
-	Point3 getNormal(Point3 p);
-	ld getArea();
+	Point3 getNormal(Point3 p) const;
+	ld getArea() const;
+	AABB3 box();
 	~Triangle();
 private:
 	Point3 _vertex1;

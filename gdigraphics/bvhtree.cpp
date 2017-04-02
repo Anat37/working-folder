@@ -1,150 +1,218 @@
-#include"object3.h"
-#include"AABB3.h"
-#include<algorithm>
-#define STACK_SIZE 64
+#include"bvhtree.h"
 
-class BVHTree {
-	struct SplitData{
-		long double sah;
-		int axis;
-		bool subdivideNext;
-		size_t primsOnLeftSide;
-		size_t primsOnRightSide;
-		res.leftBounds = leftBounds;
-		res.rightBounds = rightBounds[i - 1];
-	};
+BVHTree::BVHTree(){}
 
-	struct BoxLessMax {
-		BoxLessMax(int a) { 
-			axis = a;
-		}
-		bool operator()(const Object3* p1, const Object3* p2) const {
-			return (p1->getMax(axis) < p2->getMax(axis));
-		}
-		int axis;
-	};
+BVHTree::BVHNode::BVHNode() {}
 
-	SplitData FindObjectSplit(std::vector<Object3*>& a_plistX, std::vector<Object3*>& a_plistY, std::vector<Object3*>& a_plistZ, const AABB3 a_box) {
-		
+BVHTree::BVHNode::BVHNode(AABB3 b, size_t lb, size_t rb, BVHNode* l, BVHNode* r, BVHNode* p)
+	:box(b)
+	,rightBound(rb)
+	,leftBound(lb)
+	,left(l)
+	,right(r)
+	,parent(p){}
 
-		std::vector<Object3*>* plists[3] = { &a_plistX, &a_plistY, &a_plistZ };
-		BVHTree::SplitData res;
-		res.sah = a_box.getArea()*a_plistX.size(); // SAH_OVERSPLIT_TRESHOLD usually equals to 1.0f
-		res.subdivideNext = false;
-		res.axis = -1;
-		std::vector<AABB3> rightBounds(a_plistX.size());
-		for (int dim = 0; dim < 3; dim++)
-		{
-			// sort data according to axis
-			//
-			std::vector<Object3*>& plist = *plists[dim];
-			std::sort(plist.begin(), plist.end(), BoxLessMax(dim));
-			// Sweep right to left and determine bounds.
-			//
-			AABB3 rightBounds1;
-			for (size_t i = plist.size() - 1; i > 0; i--)
-			{
-				rightBounds1.include(plist[i].Box());
-				rightBounds[i - 1] = rightBounds1;
+int BVHTree::isIntersectSegment(Line ray) {
+	std::stack<BVHNode*> st;
+	st.push(&root);
+	while (!st.empty()) {
+		BVHNode* node = st.top();
+		st.pop();
+		if (node->left == nullptr && node->right == nullptr) {
+			for (unsigned int j = node->leftBound; j < node->rightBound; ++j) {
+				ld curr_dist = _objects[j]->isIntercectLine(ray);
+				if (sign(curr_dist - (0.99999*ray.b).len2()) == -1 && curr_dist != -1)
+					return j;
 			}
-			// Sweep left to right and select lowest SAH.
-			//
-			AABB3 leftBounds;
-			for (size_t i = 1; i < plist.size(); i++)
-			{
-				leftBounds.include(plist[i - 1].Box());
-				float sah = EMPTY_NODE_COST_TRAVERSE + leftBounds.getArea()*(i)+rightBounds[i - 1].getArea() * (plist.size() - i);
-				if (sah < res.sah)
-				{
-					res.sah = sah;
-					res.axis = dim;
-					res.primsOnLeftSide = i;
-					res.primsOnRightSide = plist.size() - i;
-					res.leftBounds = leftBounds;
-					res.rightBounds = rightBounds[i - 1];
+			continue;
+		}
+		ld leftd = -1;
+		ld rightd = -1;
+		if (node->left != nullptr) {
+			leftd = node->left->box.isIntercectLine(ray);
+		}
+		if (node->right != nullptr) {
+			rightd = node->right->box.isIntercectLine(ray);
+		}
+		if (leftd != -1 && rightd != -1) {
+			if (leftd > rightd) {
+				st.push(node->left);
+				st.push(node->right);
+			}
+			else {
+				st.push(node->right);
+				st.push(node->left);
+			}
+		}
+		else {
+			if (leftd != -1) {
+				st.push(node->left);
+			}
+			else {
+				st.push(node->right);
+			}
+		}
+	}
+	return -1;
+}
+
+SurfacedPoint3 BVHTree::getClosestIntersection(Line ray) {
+	ld min_dist = std::numeric_limits<double>::infinity();
+	ld curr_dist;
+	SurfacedPoint3 clr = SurfacedPoint3();
+	std::stack<BVHNode*> st;
+	st.push(&root);
+	while (!st.empty()) {
+		BVHNode* node = st.top();
+		st.pop();
+		if (node->left == nullptr && node->right == nullptr) {
+			for (unsigned int j = node->leftBound; j < node->rightBound; ++j) {
+				curr_dist = _objects[j]->isIntercectLine(ray);
+				if (sign(curr_dist) == 1 && curr_dist < min_dist) {
+					min_dist = curr_dist;
+					clr = _objects[j]->getSurfaceOfLastIntercection(ray);
 				}
 			}
-		} // for (int dim=0;dim<3;dim++)
-		res.subdivideNext = (res.axis != -1) && (res.sah < SAH_OVERSPLIT_TRESHOLD*a_box.getArea()*a_plistX.size());
-		return res;
-	}
-
-	struct TraversalStackElement
-	{
-		float t_far;
-		int   offset;
-	};
-
-	void BVHTraversal(Point3 ray_pos, Point3 ray_dir, Lite_Hit* pClosestHit)
-	{
-		TraversalStackElement stack[STACK_SIZE];
-		int top = 0;
-		stack[0].t_far = INFINITY; // this is need
-		*pClosestHit = Lite_Hit::NONE; // no intersection found
-		int leftNodeOffset = 1;
-		Point3 invDir = SafeInverse(ray_dir);
-		while (true)
-		{
-			// traversal code
-			//
-			while (true)
-			{
-				BVHNode leftNode = GetBVHNode(leftNodeOffset);
-				BVHNode rightNode = GetBVHNode(leftNodeOffset + 1);   // right node
-				int leftRightOffsetAndLeaf = rightNode.m_leftOffsetAndLeaf;
-				int leftLeftOffsetAndLeaf = leftNode.m_leftOffsetAndLeaf;
-				float c0min = 0;
-				float c1min = 0;
-				bool traverseChild0 = RayBoxIntersection(ray_pos, invDir, leftNode.box, &c0min);
-				bool traverseChild1 = RayBoxIntersection(ray_pos, invDir, rightNode.box, c1min);
-				traverseChild0 = traverseChild0 && (pClosestHit->t >= c0min);
-				traverseChild1 = traverseChild1 && (pClosestHit->t >= c1min);
-				// traversal decision
-				//
-				if (traverseChild0 && traverseChild1)
-				{
-					// determine nearest node
-					//
-					stack[top].t_far = fmaxf(c1min, c0min);
-					stack[top].offset = (c0min <= c1min) ? leftRightOffsetAndLeaf : leftLeftOffsetAndLeaf;
-					leftNodeOffset = (c0min <= c1min) ? leftLeftOffsetAndLeaf : leftRightOffsetAndLeaf;
-					top++;
-				}
-				else if (traverseChild0 && !traverseChild1)
-					leftNodeOffset = leftLeftOffsetAndLeaf;
-				else if (!traverseChild0 && traverseChild1)
-					leftNodeOffset = leftRightOffsetAndLeaf;
-				else // both miss, stack.pop()
-				{
-					if (top == 0)
-						return;
-					do
-					{
-						top--;
-						leftNodeOffset = stack[top].offset;
-					} while (top != 0 && pClosestHit->t < stack[top].t_far);
-				}
-				if (BVHNode::IS_LEAF(leftNodeOffset))
-					break;
-				leftNodeOffset = BVHNode::EXTRACT_OFFSET(leftNodeOffset);
-			} //  end traversal code
-
-			  // intersection code
-			  //
-			do
-			{
-				int primsListOffset = BVHNode::EXTRACT_PRIMITIVE_LIST_OFFSET(leftNodeOffset);
-				IntersectAllPrimitivesInLeaf(ray_pos, ray_dir, primsListOffset, pClosestHit);
-				if (top == 0)
-					return;
-				do
-				{
-					top--;
-					leftNodeOffset = stack[top].offset;
-				} while (top != 0 && pClosestHit->t < stack[top].t_far);
-			} while (BVHNode::IS_LEAF(leftNodeOffset));
-			leftNodeOffset = BVHNode::EXTRACT_OFFSET(leftNodeOffset);
+			continue;
 		}
-
+		ld leftd = -1;
+		ld rightd = -1;
+		if (node->left != nullptr) {
+			leftd = node->left->box.isIntercectLine(ray);
+			if (leftd > min_dist)
+				leftd = -1;
+		}
+		if (node->right != nullptr) {
+			rightd = node->right->box.isIntercectLine(ray);
+			if (rightd > min_dist)
+				rightd = -1;
+		}
+		if (leftd != -1 && rightd != -1) {
+			if (leftd > rightd) {
+				st.push(node->left);
+				st.push(node->right);
+			} else {
+				st.push(node->right);
+				st.push(node->left);
+			}
+		} else {
+			if (leftd != -1) {
+				st.push(node->left);
+			} else {
+				st.push(node->right);
+			}
+		}
 	}
-};
+	if (min_dist < std::numeric_limits<double>::infinity())
+		return clr;
+	else
+		return SurfacedPoint3();
+}
+
+BVHTree::~BVHTree() {
+	std::queue<BVHNode*> q;
+	q.push(root.left);
+	q.push(root.right);
+	while (!q.empty()) {
+		BVHNode* node = q.front();
+		q.pop();
+		if (node != nullptr) {
+			q.push(node->left);
+			q.push(node->right);
+			delete node;
+		}
+	}
+}
+
+BVHTree::BoxLessMax::BoxLessMax(int a) {
+	axis = a;
+}
+
+bool BVHTree::BoxLessMax::operator()(const Object3* p1, const Object3* p2) const {
+		return (p1->getMax(axis) < p2->getMax(axis));
+}
+
+void BVHTree::setObjects(std::vector<Object3*> objs) {
+	_objects = objs;
+}
+
+void BVHTree::buildTree() {
+	root.leftBound = 0;
+	root.rightBound = _objects.size();
+	for (size_t i = 0; i < _objects.size(); ++i) {
+		root.box.include(_objects[i]->box());
+	}
+	root.left = nullptr;
+	root.right = nullptr;
+	root.parent = nullptr;
+	std::queue<BVHNode*> q;
+	q.push(&root);
+	while (!q.empty()) {
+		BVHNode* node = q.front();
+		q.pop();
+		if (node != nullptr) {
+			splitNode(node);
+			if (node->left != nullptr)
+				q.push(node->left);
+			if (node->right != nullptr)
+				q.push(node->right);
+		}
+	}
+}
+
+void BVHTree::splitNode(BVHNode* node) {
+	size_t size = node->rightBound - node->leftBound;
+	if (size < 5) {
+		setParent(node);
+		return;
+	}
+	ld resSAH = node->box.getArea()*(size); // SAH_OVERSPLIT_TRESHOLD usually equals to 1.0f
+	int axis = -1;
+	size_t division = -1;
+	AABB3 rightBox;
+	AABB3 leftBox;
+	std::vector<ld> rightSAH(size);
+	for (int dim = 0; dim < 3; ++dim) {
+		std::sort(_objects.begin() + node->leftBound, _objects.begin() + node->rightBound, BoxLessMax(dim));
+		AABB3 rightBounds1;
+		for (size_t i = node->rightBound - 1; i > node->leftBound; i--) {
+			rightBounds1.include(_objects[i]->box());
+			rightSAH[i - node->leftBound - 1] = rightBounds1.getArea() * (node->rightBound - i);
+		}
+		AABB3 leftBounds;
+		for (size_t i = node->leftBound + 1; i < node->rightBound; i++) {
+			leftBounds.include(_objects[i - 1]->box());
+			float sah = leftBounds.getArea()*(i - node->leftBound) + rightSAH[i - node->leftBound - 1];
+			if (sah < resSAH) {
+				resSAH = sah;
+				axis = dim;
+				division = i;
+				leftBox = leftBounds;
+			}
+		}
+		if (dim == axis) {
+			rightBox = AABB3();
+			for (size_t i = node->rightBound - 1; i >= division; i--) {
+				rightBox.include(_objects[i]->box());
+			}
+		}
+	} // for (int dim=0;dim<3;dim++)
+	if (axis != -1) {
+		BVHNode* left = new BVHNode(leftBox, node->leftBound, division, nullptr, nullptr, node);
+		BVHNode* right = new BVHNode(rightBox, division, node->rightBound, nullptr, nullptr, node);
+		node->left = left;
+		node->right = right;
+	}
+	setParent(node);
+}
+
+void BVHTree::setParent(BVHNode* node) {
+	if (node->parent == nullptr)
+		return;
+	if (node->leftBound == node->parent->leftBound) {
+		node->parent->left = node;
+	}
+	else {
+		node->parent->right = node;
+	}
+}

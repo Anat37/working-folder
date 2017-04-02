@@ -48,3 +48,5 @@ Point3 findLineIntersection(Line a, Line b);
 bool doesSegmentsInterceptLine(Line seg, Line l);
 
 bool areSegmentsIntercept(Line s1, Line s2);
+
+ld cosBetween(Point3 s1, Point3 s2);

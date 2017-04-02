@@ -2,7 +2,7 @@
 #include<exception>
 #include"geom3.h"
 
-const long double eps = 1e-20;
+const long double eps = 1e-12;
 
 ld Point3::len2() const {
 	return x*x + y*y + z*z;
@@ -107,4 +107,9 @@ bool isZeroRay(Line ray) {
 		return true;
 	else 
 		return false;
+}
+
+ld cosBetween(Point3 s1, Point3 s2) {
+	ld scal = (s1^s2);
+	return sign(scal) * scal * scal / (s1.len2()*s2.len2());
 }
