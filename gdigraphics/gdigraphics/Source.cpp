@@ -7,7 +7,7 @@
 #include"PointLighter.h"
 
 extern template class ThreadPool<void>;
-ThreadPool<void> threadPool(7); //Num of threads
+ThreadPool<void> threadPool(3); //Num of threads
 
 std::vector<Object3*> piramid(Point3 loc, size_t cnt, ld edge, std::vector<Object3*>& lst) {
 	if (cnt >= 5) {
@@ -30,7 +30,7 @@ Scene construct(int sx, int sy) {
 	Triangle* triag1 = new Triangle({ 25.,10.,0. }, { 0.0,0.,200. }, { -50.,0.,0. }, { 0.,-1.,0. }, whMirror, Red);
 	Triangle* triagf1 = new Triangle({ 14.,3.,0. }, { -5.,5.,0. }, { 0.,0.,5. }, { -1.,-1.,0. }, transGreen, White);
 	Triangle* triagf2 = new Triangle({ -10.,-10.,0. }, { 1000.,0.,0. }, { 0.,1000.,0. }, { 0.,0.,1. }, White, White);
-	size_t n = 150000;
+	size_t n = 1500;
 	AmbientLighter* amb = new AmbientLighter({ 0,0,0 }, AmbL);
 	PointLighter* pwh1 = new PointLighter({ 12, 8, 5 }, PointLWhite);
 	PointLighter* pwh2 = new PointLighter({ 20, 5, 5 }, PointLWhite);

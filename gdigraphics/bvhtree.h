@@ -8,15 +8,16 @@
 
 class BVHTree {
 public:
-	BVHTree();
+	BVHTree(std::vector<Object3*>& obj);
 	BVHTree(BVHTree&& other);
 
-	int isIntersectSegment(Line ray);
-	SurfacedPoint3 getClosestIntersection(Line ray);
+	int isIntersectSegment(const Line& ray) const;
+	SurfacedPoint3 getClosestIntersection(const Line& ray) const;
 	void buildTree();
-	void setObjects(std::vector<Object3*> objs);
+	/*void setObjects(std::vector<Object3*>& objs);*/
 
 	~BVHTree();
+	std::vector<Object3*>& _objects;
 
 private:
 	struct BVHNode {
@@ -35,7 +36,7 @@ private:
 	};
 
 	BVHNode root;
-	std::vector<Object3*> _objects;
+	
 	std::atomic<long long> _nodesToSplit;
 
 	void splitNode(BVHNode* node);

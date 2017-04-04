@@ -18,17 +18,17 @@ SurfacedPoint3::SurfacedPoint3()
 	,surface({ 0,0,0 },1,0, 0)
 	,norm({0,0,0}) {}
 
-SurfacedPoint3::SurfacedPoint3(ld x, ld y, ld z, Surface sur, Point3 nrm)
+SurfacedPoint3::SurfacedPoint3(const ld x, const ld y, const ld z, const Surface& sur, const Point3& nrm)
 	:Point3({ x,y,z })
 	,surface(sur)
 	,norm(nrm) {}
 
-SurfacedPoint3::SurfacedPoint3(Point3 p, Surface sur, Point3 nrm)
+SurfacedPoint3::SurfacedPoint3(const Point3& p, const Surface& sur, const Point3& nrm)
 	:Point3(p) 
 	,surface(sur)
 	,norm(nrm) {}
 
-SurfacedPoint3::SurfacedPoint3(SurfacedPoint3& p) {
+SurfacedPoint3::SurfacedPoint3(const SurfacedPoint3& p) {
 	x = p.x;
 	y = p.y;
 	z = p.z;
@@ -36,7 +36,7 @@ SurfacedPoint3::SurfacedPoint3(SurfacedPoint3& p) {
 	norm = p.norm;
 }
 
-void SurfacedPoint3::operator=(SurfacedPoint3 p) {
+void SurfacedPoint3::operator=(const SurfacedPoint3& p) {
 	x = p.x;
 	y = p.y;
 	z = p.z;

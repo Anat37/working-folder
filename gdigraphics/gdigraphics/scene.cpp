@@ -13,12 +13,10 @@ struct showcase {
 	ld ans2;
 };
 
-Scene::Scene() {
-}
-
 Scene::Scene(std::vector<Object3*>&& obj, std::vector<Lighter*>&& light)
 	:_objects(obj)
-	,_lighters(light){}
+	,_lighters(light)
+	,_tree(_objects){}
 
 Scene::Scene(Scene&& other) 
 	:_objects(std::move(other._objects))
@@ -26,7 +24,6 @@ Scene::Scene(Scene&& other)
 	, _tree(std::move(other._tree)) {}
 
 void Scene::prepareScene() {
-	_tree.setObjects(_objects);
 	_tree.buildTree();
 	for (size_t i = 0; i < _objects.size(); ++i)
 		if (_objects[i]->isPhantomLighter()) {
@@ -54,7 +51,7 @@ Color* Scene::render(Screen& screen, Viewer& viewer) {
 	return ptr;
 }
 
-void Scene::calcPixel(int x, int y, Screen& screen, Viewer& viewer, Color* ptr) {
+void Scene::calcPixel(int x, int y, const Screen& screen, const Viewer& viewer, Color* ptr) {
 	Line ray{ screen.getPixel(x, y), screen.getPixel(x, y) - viewer.getLocation() };
 	lightAttr attr = traceRay(ray, 1);
 	*ptr = Color(cutColor(attr.red), cutColor(attr.green), cutColor(attr.blue));

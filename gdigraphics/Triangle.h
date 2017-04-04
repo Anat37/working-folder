@@ -3,11 +3,12 @@
 class Triangle :public Object3 {
 public:
 	Triangle();
-	Triangle(Point3 p1, Point3 e1, Point3 e2, Point3 faceNormal, Surface faceSurf, Surface backSurf);
+	Triangle(const Point3& p1, const Point3& e1, const Point3& e2,
+		const Point3& faceNormal, const Surface& faceSurf, const Surface& backSurf);
 
 
-	ld isIntercectLine(Line ray, SurfacedPoint3& ptr) const;
-	Point3 getNormal(Point3 p) const;
+	ld isIntercectLine(const Line& ray, SurfacedPoint3& ptr) const;
+	Point3 getNormal(const Point3& p) const;
 	bool isPhantomLighter() const;
 	PhantomLighter* getPhantomLighter(Lighter* light) const;
 	AABB3 box();

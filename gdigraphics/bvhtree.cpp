@@ -5,7 +5,8 @@
 extern template class ThreadPool<void>;
 extern ThreadPool<void> threadPool;
 
-BVHTree::BVHTree(){}
+BVHTree::BVHTree(std::vector<Object3*>& obj)
+	:_objects(obj){}
 
 BVHTree::BVHTree(BVHTree&& other)
 	:_objects(std::move(other._objects))
@@ -20,11 +21,11 @@ BVHTree::BVHNode::BVHNode(AABB3 b, size_t lb, size_t rb, BVHNode* l, BVHNode* r)
 	,left(l)
 	,right(r){}
 
-int BVHTree::isIntersectSegment(Line ray) {
-	std::stack<BVHNode*> st;
+int BVHTree::isIntersectSegment(const Line& ray) const {
+	std::stack<const BVHNode*> st;
 	st.push(&root);
 	while (!st.empty()) {
-		BVHNode* node = st.top();
+		const BVHNode* node = st.top();
 		st.pop();
 		if (node->left == nullptr && node->right == nullptr) {
 			SurfacedPoint3 ptr;
@@ -66,14 +67,14 @@ int BVHTree::isIntersectSegment(Line ray) {
 	return -1;
 }
 
-SurfacedPoint3 BVHTree::getClosestIntersection(Line ray) {
+SurfacedPoint3 BVHTree::getClosestIntersection(const Line& ray) const {
 	ld min_dist = std::numeric_limits<double>::infinity();
 	ld curr_dist;
 	SurfacedPoint3 clr = SurfacedPoint3();
-	std::stack<BVHNode*> st;
+	std::stack<const BVHNode*> st;
 	st.push(&root);
 	while (!st.empty()) {
-		BVHNode* node = st.top();
+		const BVHNode* node = st.top();
 		st.pop();
 		if (node->left == nullptr && node->right == nullptr) {
 			SurfacedPoint3 ptr;
@@ -148,11 +149,11 @@ bool BVHTree::BoxLessMax::operator()(const Object3* p1, const Object3* p2) const
 		}
 	}
 }
-
+/*
 void BVHTree::setObjects(std::vector<Object3*> objs) {
 	_objects = objs;
 }
-
+*/
 void BVHTree::buildTree() {
 	root.leftBound = 0;
 	root.rightBound = _objects.size();

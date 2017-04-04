@@ -4,31 +4,31 @@
 
 Screen::Screen() {}
 
-Point3 Screen::getXAxis() {
+Point3 Screen::getXAxis() const {
 	return _xAxis;
 }
 
-Point3 Screen::getYAxis() {
+Point3 Screen::getYAxis() const {
 	return _yAxis;
 }
 
-ld Screen::getWidth() {
+ld Screen::getWidth() const {
 	return _width;
 }
 
-ld Screen::getHeigth() {
+ld Screen::getHeigth() const {
 	return _heigth;
 }
 
-int Screen::getPixX() {
+int Screen::getPixX() const {
 	return _pixX;
 }
 
-int Screen::getPixY() {
+int Screen::getPixY() const {
 	return _pixY;
 }
 
-Point3 Screen::getPixel(int x, int y) {
+Point3 Screen::getPixel(int x, int y) const {
 	return _location + x*_deltX + y*_deltY;
 }
 

@@ -5,7 +5,8 @@
 
 Triangle::Triangle() {}
 
-Triangle::Triangle(Point3 p1, Point3 e1, Point3 e2, Point3 faceNorm, Surface faceSurf, Surface backSurf)
+Triangle::Triangle(const Point3& p1, const Point3& e1, const Point3& e2,
+	const Point3& faceNorm, const Surface& faceSurf, const Surface& backSurf)
 	:_vertex1(p1)
 	,_edge1(e1)
 	,_edge2(e2)
@@ -25,7 +26,7 @@ bool Triangle::isPhantomLighter() const {
 		return false;
 }
 
-ld Triangle::isIntercectLine(Line ray, SurfacedPoint3& ptr) const{
+ld Triangle::isIntercectLine(const Line& ray, SurfacedPoint3& ptr) const{
 	ld inv_det, u, v, t;
 	//Begin calculating determinant - also used to calculate u parameter
 	Point3 P = ray.b * _edge2;
@@ -67,7 +68,7 @@ ld Triangle::isIntercectLine(Line ray, SurfacedPoint3& ptr) const{
 	return -1;
 }
 
-Point3 Triangle::getNormal(Point3 p) const{
+Point3 Triangle::getNormal(const Point3& p) const{
 	return _faceNormal;
 }
 

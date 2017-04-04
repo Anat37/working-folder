@@ -5,7 +5,7 @@
 Lighter::Lighter(){
 }
 
-Lighter::Lighter(Point3 loc, Surface lt) 
+Lighter::Lighter(const Point3& loc, const Surface& lt)
 	:Located(loc)
 	,attr(lt) {}
 

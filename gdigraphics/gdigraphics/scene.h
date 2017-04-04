@@ -7,15 +7,14 @@
 
 class Scene {
 public:
-	Scene();
 	Scene(std::vector<Object3*>&& obj, std::vector<Lighter*>&& light);
 	Scene(Scene&& other);
+	std::vector<Object3*> _objects;
 
 	void prepareScene();
 	Color* render(Screen& screen, Viewer& viewer);
 	~Scene();
 private:
-	std::vector<Object3*> _objects;
 	std::vector<Lighter*> _lighters;
 	std::vector<PhantomLighter*> _phantomLighters;
 	BVHTree _tree;
@@ -24,7 +23,7 @@ private:
 	lightAttr getSecondLighting(SurfacedPoint3 p, int recDepth);
 	lightAttr getReflection(SurfacedPoint3& p, Line ray, int recDepth);
 	Line Scene::refract(SurfacedPoint3 p, Line ray);
-	void calcPixel(int x, int y, Screen& scr, Viewer& viewer, Color* ptr);
+	void calcPixel(int x, int y, const Screen& scr, const Viewer& viewer, Color* ptr);
 	lightAttr traceRay(Line ray, int recDepth);
 };
 

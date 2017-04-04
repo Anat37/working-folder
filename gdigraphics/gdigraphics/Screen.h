@@ -6,13 +6,13 @@ public:
 	Screen();
 	Screen(Point3 loc, Point3 xAx, Point3 yAx, ld width, ld heigth, int pixX, int pixY);
 
-	Point3 getYAxis();
-	Point3 getXAxis();
-	ld getWidth();
-	ld getHeigth();
-	int getPixX();
-	int getPixY();
-	Point3 getPixel(int x, int y);
+	Point3 getYAxis() const;
+	Point3 getXAxis() const;
+	ld getWidth() const;
+	ld getHeigth() const;
+	int getPixX() const;
+	int getPixY() const;
+	Point3 getPixel(int x, int y) const;
 
 	void setYAxis(Point3 y);
 	void setXAxis(Point3 x);

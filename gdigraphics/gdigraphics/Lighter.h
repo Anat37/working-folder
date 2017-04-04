@@ -6,9 +6,9 @@
 class Lighter :public Located {
 public:
 	Lighter();
-	Lighter(Point3 loc, Surface lt);
-	virtual Line directionFrom(SurfacedPoint3 p) const = 0;
-	virtual lightAttr colorOfPoint(SurfacedPoint3 p) const = 0;
+	Lighter(const Point3& loc, const Surface& lt);
+	virtual Line directionFrom(const SurfacedPoint3& p) const = 0;
+	virtual lightAttr colorOfPoint(const SurfacedPoint3& p) const = 0;
 	virtual bool canCreatePhantom() const = 0;
 	~Lighter();
 	Surface attr;

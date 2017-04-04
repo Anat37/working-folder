@@ -5,11 +5,11 @@
 class AABB3 : public Located{
 public:
 	AABB3();
-	AABB3(Point3 p1, Point3 edge);
+	AABB3(const Point3& p1, const Point3& edge);
 
-	ld isIntercectLine(Line ray) const;
+	ld isIntercectLine(const Line& ray) const;
 	ld getArea() const;
-	void include(AABB3& box);
+	void include(const AABB3& box);
 	~AABB3();
 private:
 	Point3 _edge;

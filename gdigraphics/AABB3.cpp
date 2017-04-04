@@ -7,27 +7,27 @@ AABB3::AABB3()
 
 AABB3::~AABB3(){}
 
-AABB3::AABB3(Point3 p1, Point3 edge)
+AABB3::AABB3(const Point3& p1, const Point3& edge)
 	:_edge(edge){
 	setLocation(p1);
 }
 
-ld AABB3::isIntercectLine(Line ray) const{
+ld AABB3::isIntercectLine(const Line& ray) const{
 	Point3 invDir(safeInverse(ray.b));
 	ld lo = invDir.x*(_location.x - ray.a.x);
 	ld hi = invDir.x*(_edge.x - ray.a.x);
 	ld tmin = std::min(lo, hi);
 	ld tmax = std::max(lo, hi);
 
-	ld lo1 = invDir.y*(_location.y - ray.a.y);
-	ld hi1 = invDir.y*( _edge.y - ray.a.y);
-	tmin = std::max(tmin, std::min(lo1, hi1));
-	tmax = std::min(tmax, std::max(lo1, hi1));
+	lo = invDir.y*(_location.y - ray.a.y);
+	hi = invDir.y*( _edge.y - ray.a.y);
+	tmin = std::max(tmin, std::min(lo, hi));
+	tmax = std::min(tmax, std::max(lo, hi));
 
-	ld lo2 = invDir.z*(_location.z - ray.a.z);
-	ld hi2 = invDir.z*(_edge.z - ray.a.z);
-	tmin = std::max(tmin, std::min(lo2, hi2));
-	tmax = std::min(tmax, std::max(lo2, hi2));
+	lo = invDir.z*(_location.z - ray.a.z);
+	hi = invDir.z*(_edge.z - ray.a.z);
+	tmin = std::max(tmin, std::min(lo, hi));
+	tmax = std::min(tmax, std::max(lo, hi));
 
 	if ((tmin <= tmax) && tmax > 0.) {
 		return (tmin*ray.b).len2();
@@ -42,7 +42,7 @@ ld AABB3::getArea() const {
 	return 2 * (x*y) + 2 * (x*z) + 2 * (y *z);
 }
 
-void AABB3::include(AABB3& box) {
+void AABB3::include(const AABB3& box) {
 	if (isZeroPoint(_location) && isZeroPoint(_edge)) {
 		_location = box.getLocation();
 		_edge = box._edge;

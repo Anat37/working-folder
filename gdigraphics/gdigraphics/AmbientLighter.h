@@ -3,9 +3,9 @@
 class AmbientLighter : public Lighter {
 public:
 	AmbientLighter();
-	AmbientLighter(Point3 loc, Surface lt);
-	Line directionFrom(SurfacedPoint3 p) const;
-	lightAttr colorOfPoint(SurfacedPoint3 p) const;
+	AmbientLighter(const Point3& loc, const Surface& lt);
+	Line directionFrom(const SurfacedPoint3& p) const;
+	lightAttr colorOfPoint(const SurfacedPoint3& p) const;
 	bool canCreatePhantom() const;
 	~AmbientLighter();
 };
