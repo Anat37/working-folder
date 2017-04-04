@@ -6,7 +6,7 @@ typedef long double ld;
 struct Point3 {
 	ld x, y, z;
 	ld len2() const;
-	Point3 inverse();
+	Point3 inverse() const;
 };
 
 Point3 operator*(Point3 a, Point3 b);
@@ -50,3 +50,5 @@ bool doesSegmentsInterceptLine(Line seg, Line l);
 bool areSegmentsIntercept(Line s1, Line s2);
 
 ld cosBetween(Point3 s1, Point3 s2);
+
+Point3 safeInverse(Point3 p);

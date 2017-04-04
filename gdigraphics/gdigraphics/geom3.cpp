@@ -8,7 +8,7 @@ ld Point3::len2() const {
 	return x*x + y*y + z*z;
 }
 
-Point3 Point3::inverse() {
+Point3 Point3::inverse() const{
 	return{ -x, -y, -z };
 }
 
@@ -112,4 +112,14 @@ bool isZeroRay(Line ray) {
 ld cosBetween(Point3 s1, Point3 s2) {
 	ld scal = (s1^s2);
 	return sign(scal) * scal * scal / (s1.len2()*s2.len2());
+}
+
+Point3 safeInverse(Point3 p) {
+	/*ld x = isZero(p.x) ? 0 : 1. / p.x;
+	ld y = isZero(p.y) ? 0 : 1. / p.y;
+	ld z = isZero(p.z) ? 0 : 1. / p.z;*/
+	ld x = 1. / p.x;
+	ld y = 1. / p.y;
+	ld z = 1. / p.z;
+	return { x, y, z };
 }

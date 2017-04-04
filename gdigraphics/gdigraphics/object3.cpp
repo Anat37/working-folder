@@ -15,10 +15,7 @@ ld Object3::getMax(int dim) const{
 
 SurfacedPoint3::SurfacedPoint3() 
 	:Point3({0,0,0})
-	,surface({ 0,0,0 },
-	{ 0,0,0 },
-	{ 0,0,0 },
-		0, 0)
+	,surface({ 0,0,0 },1,0, 0)
 	,norm({0,0,0}) {}
 
 SurfacedPoint3::SurfacedPoint3(ld x, ld y, ld z, Surface sur, Point3 nrm)

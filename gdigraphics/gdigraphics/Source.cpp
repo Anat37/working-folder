@@ -1,65 +1,58 @@
 //#include <stdafx.h>
-#include"glibs.h"
+#include"thread_pool.h"
 #include"scene.h"
 #include"Triangle.h"
 #include"surfacelib.h"
 #include"AmbientLighter.h"
 #include"PointLighter.h"
 
-std::vector<Object3*> piramid(Point3 loc, int cnt, ld edge) {
-	std::vector<Object3*> lst;
-	if (cnt > 5) {
+extern template class ThreadPool<void>;
+ThreadPool<void> threadPool(7); //Num of threads
+
+std::vector<Object3*> piramid(Point3 loc, size_t cnt, ld edge, std::vector<Object3*>& lst) {
+	if (cnt >= 5) {
 		edge = edge / 2.;
-		std::vector<Object3*> vect(piramid(loc, cnt / 5, edge));
-		for (size_t i = 0; i < vect.size(); ++i)
-			lst.push_back(vect[i]);
-		vect = std::move(piramid(loc + Point3{ edge, 0., 0. }, cnt / 5, edge));
-		for (size_t i = 0; i < vect.size(); ++i)
-			lst.push_back(vect[i]);
-		vect = std::move(piramid(loc + Point3{ 0., edge, 0. }, cnt / 5, edge));
-		for (size_t i = 0; i < vect.size(); ++i)
-			lst.push_back(vect[i]);
-		vect = std::move(piramid(loc + Point3{ edge, edge, 0. }, cnt / 5, edge));
-		for (size_t i = 0; i < vect.size(); ++i)
-			lst.push_back(vect[i]);
-		vect = std::move(piramid(loc + Point3{ edge / 2., edge / 2., edge }, cnt / 5, edge));
-		for (size_t i = 0; i < vect.size(); ++i)
-			lst.push_back(vect[i]);
+		piramid(loc, cnt / 5, edge, lst);
+		piramid(loc + Point3{ edge, 0., 0. }, cnt / 5, edge, lst);
+		piramid(loc + Point3{ 0., edge, 0. }, cnt / 5, edge,lst);
+		piramid(loc + Point3{ edge, edge, 0. }, cnt / 5, edge,lst);
+		piramid(loc + Point3{ edge / 2., edge / 2., edge }, cnt / 5, edge,lst);
 	} else {
 		lst.push_back(new Triangle(loc, { edge,0.,0. }, { edge/2,edge/2,edge }, { 0.,-1.,0.5 }, Red, Blue));
 		lst.push_back(new Triangle(loc, { 0.,edge,0. }, { edge / 2,edge / 2,edge }, { -1.,0.,0.5 }, Red, Blue));
-		lst.push_back(new Triangle(loc + Point3{ edge,edge,0 }, { -edge,0.,0. }, { -edge / 2,-edge / 2,edge }, { 0.,1.,0.5 }, Red, Blue));
-		lst.push_back(new Triangle(loc + Point3{ edge, edge, 0 }, { 0.,-edge,0. } ,{ -edge / 2,-edge / 2,edge }, { 1.,0.,0.5 }, Red, Blue));
+		lst.push_back(new Triangle(loc + Point3{ edge,edge,0 }, { -edge,0.,0. }, { -edge / 2,-edge / 2,edge }, { 0.,1.,1. }, Red, Blue));
+		lst.push_back(new Triangle(loc + Point3{ edge, edge, 0 }, { 0.,-edge,0. } ,{ -edge / 2,-edge / 2,edge }, { 1.,0.,0.5 }, Red, Green));
 	}
 	return lst;
 }
 
 Scene construct(int sx, int sy) {
-	//Triangle* triag1 = new Triangle({ 15.,3.,0. }, { 0.0,0.,5. }, { 0.,5.,0. }, { -1.,0.,0. }, Red, Blue);
-	//Triangle* triagf1 = new Triangle({ 0.,3.,0. }, { 100.,-100.,0. }, { 100.,100.,0. }, { 0.,0.,1. }, White, White);
-	size_t n = 150026;
+	Triangle* triag1 = new Triangle({ 25.,10.,0. }, { 0.0,0.,200. }, { -50.,0.,0. }, { 0.,-1.,0. }, whMirror, Red);
+	Triangle* triagf1 = new Triangle({ 14.,3.,0. }, { -5.,5.,0. }, { 0.,0.,5. }, { -1.,-1.,0. }, transGreen, White);
+	Triangle* triagf2 = new Triangle({ -10.,-10.,0. }, { 1000.,0.,0. }, { 0.,1000.,0. }, { 0.,0.,1. }, White, White);
+	size_t n = 150000;
 	AmbientLighter* amb = new AmbientLighter({ 0,0,0 }, AmbL);
-	PointLighter* pwh1 = new PointLighter({ 10, 5, 5 }, PointLWhite);
+	PointLighter* pwh1 = new PointLighter({ 12, 8, 5 }, PointLWhite);
 	PointLighter* pwh2 = new PointLighter({ 20, 5, 5 }, PointLWhite);
-	return Scene(piramid(Point3{ 15.,0.,0. }, n, 10.), { amb, pwh1, pwh2 });
+	std::vector<Object3*> vect;
+	piramid(Point3{ 16.,0.,0. }, n, 10.,vect);
+	vect.push_back(triagf1);
+	vect.push_back(triag1);
+	vect.push_back(triagf2);
+	return Scene(std::move(vect), {amb, pwh1, pwh2});
 }
 
 VOID OnPaint(HDC hdc)
 {
 	Graphics graphics(hdc);
-	Pen      pen(Color(255, 0, 0, 255));
-	int sy = 500;
-	int sx = 500;
-	Scene scen = construct(sx, sy);
+	int sy = 1000;
+	int sx = 1000;
+	Scene scen(construct(sx, sy));
 	Viewer cam({ 0., -12., 5. }, { 0., 0., 0. });
 	Screen scr({ 10., -10, 10. }, { -1. ,1. ,0. }, { 0., 0., -1. }, 10., 10., sx, sy);
+	scen.prepareScene();
 	auto arr = scen.render(scr, cam);
 	Bitmap myBitmap(sx, sy, sx * 4, PixelFormat32bppARGB, (BYTE*)arr);
-	/*for (int i = 0; i < sy; ++i)
-		for (int j = 0; j < sx; ++j)
-			myBitmap.SetPixel(j, i, arr[i][j]);
-	*/
-	// Draw the bitmap.
 	graphics.DrawImage(&myBitmap, 0, 0, sx, sy);
 }
 

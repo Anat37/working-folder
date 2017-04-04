@@ -7,7 +7,7 @@ Lighter::Lighter(){
 
 Lighter::Lighter(Point3 loc, Surface lt) 
 	:Located(loc)
-	,_attr(lt) {}
+	,attr(lt) {}
 
 
 Lighter::~Lighter() {}

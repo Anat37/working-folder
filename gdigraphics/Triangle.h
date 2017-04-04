@@ -6,10 +6,10 @@ public:
 	Triangle(Point3 p1, Point3 e1, Point3 e2, Point3 faceNormal, Surface faceSurf, Surface backSurf);
 
 
-	ld isIntercectLine(Line ray);
-	SurfacedPoint3 getSurfaceOfLastIntercection(Line ray);
+	ld isIntercectLine(Line ray, SurfacedPoint3& ptr) const;
 	Point3 getNormal(Point3 p) const;
-	ld getArea() const;
+	bool isPhantomLighter() const;
+	PhantomLighter* getPhantomLighter(Lighter* light) const;
 	AABB3 box();
 	~Triangle();
 private:
