@@ -12,6 +12,7 @@ public:
 	std::vector<Object3*> _objects;
 
 	void prepareScene();
+	void setObjects(std::vector<Lighter*>&& lighters, std::vector<Object3*>&& objects);
 	Color* render(Screen& screen, Viewer& viewer);
 	~Scene();
 private:

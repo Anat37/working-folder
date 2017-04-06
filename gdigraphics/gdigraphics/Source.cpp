@@ -5,55 +5,112 @@
 #include"surfacelib.h"
 #include"AmbientLighter.h"
 #include"PointLighter.h"
+#include"Sphere.h"
+#include"Quadrangle.h"
+#include"TexturedTriangle.h"
+
+using namespace cimg_library;
 
 extern template class ThreadPool<void>;
-ThreadPool<void> threadPool(3); //Num of threads
+ThreadPool<void> threadPool(7); //Num of threads
 
-std::vector<Object3*> piramid(Point3 loc, size_t cnt, ld edge, std::vector<Object3*>& lst) {
-	if (cnt >= 5) {
+std::vector<Object3*> piramid(Point3 loc, int cnt, ld edge) {
+	std::vector<Object3*> lst;
+	if (cnt > 5) {
 		edge = edge / 2.;
-		piramid(loc, cnt / 5, edge, lst);
-		piramid(loc + Point3{ edge, 0., 0. }, cnt / 5, edge, lst);
-		piramid(loc + Point3{ 0., edge, 0. }, cnt / 5, edge,lst);
-		piramid(loc + Point3{ edge, edge, 0. }, cnt / 5, edge,lst);
-		piramid(loc + Point3{ edge / 2., edge / 2., edge }, cnt / 5, edge,lst);
-	} else {
-		lst.push_back(new Triangle(loc, { edge,0.,0. }, { edge/2,edge/2,edge }, { 0.,-1.,0.5 }, Red, Blue));
+		std::vector<Object3*> vect(piramid(loc, cnt / 5, edge));
+		for (size_t i = 0; i < vect.size(); ++i)
+			lst.push_back(vect[i]);
+		vect = std::move(piramid(loc + Point3{ edge, 0., 0. }, cnt / 5, edge));
+		for (size_t i = 0; i < vect.size(); ++i)
+			lst.push_back(vect[i]);
+		vect = std::move(piramid(loc + Point3{ 0., edge, 0. }, cnt / 5, edge));
+		for (size_t i = 0; i < vect.size(); ++i)
+			lst.push_back(vect[i]);
+		vect = std::move(piramid(loc + Point3{ edge, edge, 0. }, cnt / 5, edge));
+		for (size_t i = 0; i < vect.size(); ++i)
+			lst.push_back(vect[i]);
+		vect = std::move(piramid(loc + Point3{ edge / 2., edge / 2., edge }, cnt / 5, edge));
+		for (size_t i = 0; i < vect.size(); ++i)
+			lst.push_back(vect[i]);
+	}
+	else {
+		lst.push_back(new Triangle(loc, { edge,0.,0. }, { edge / 2,edge / 2,edge }, { 0.,-1.,0.5 }, Red, Blue));
 		lst.push_back(new Triangle(loc, { 0.,edge,0. }, { edge / 2,edge / 2,edge }, { -1.,0.,0.5 }, Red, Blue));
-		lst.push_back(new Triangle(loc + Point3{ edge,edge,0 }, { -edge,0.,0. }, { -edge / 2,-edge / 2,edge }, { 0.,1.,1. }, Red, Blue));
-		lst.push_back(new Triangle(loc + Point3{ edge, edge, 0 }, { 0.,-edge,0. } ,{ -edge / 2,-edge / 2,edge }, { 1.,0.,0.5 }, Red, Green));
+		lst.push_back(new Triangle(loc + Point3{ edge,edge,0 }, { -edge,0.,0. }, { -edge / 2,-edge / 2,edge }, { 0.,1.,0.5 }, Red, Blue));
+		lst.push_back(new Triangle(loc + Point3{ edge, edge, 0 }, { 0.,-edge,0. }, { -edge / 2,-edge / 2,edge }, { 1.,0.,0.5 }, Red, Blue));
 	}
 	return lst;
 }
 
-Scene construct(int sx, int sy) {
-	Triangle* triag1 = new Triangle({ 25.,10.,0. }, { 0.0,0.,200. }, { -50.,0.,0. }, { 0.,-1.,0. }, whMirror, Red);
-	Triangle* triagf1 = new Triangle({ 14.,3.,0. }, { -5.,5.,0. }, { 0.,0.,5. }, { -1.,-1.,0. }, transGreen, White);
-	Triangle* triagf2 = new Triangle({ -10.,-10.,0. }, { 1000.,0.,0. }, { 0.,1000.,0. }, { 0.,0.,1. }, White, White);
-	size_t n = 1500;
-	AmbientLighter* amb = new AmbientLighter({ 0,0,0 }, AmbL);
-	PointLighter* pwh1 = new PointLighter({ 12, 8, 5 }, PointLWhite);
-	PointLighter* pwh2 = new PointLighter({ 20, 5, 5 }, PointLWhite);
-	std::vector<Object3*> vect;
-	piramid(Point3{ 16.,0.,0. }, n, 10.,vect);
-	vect.push_back(triagf1);
-	vect.push_back(triag1);
-	vect.push_back(triagf2);
-	return Scene(std::move(vect), {amb, pwh1, pwh2});
-}
+class Envy {
+public:
+	Envy()
+		:scene(std::vector<Object3*>(), std::vector<Lighter*>()){}
+
+	Scene scene;
+	Screen screen;
+	Viewer viewer;
+	int sy;
+	int sx;
+
+	void buildEnvy() {
+		CImg<unsigned char>* image = new CImg<unsigned char>("D:\\Repos\\workf\\gdigraphics\\gdigraphics\\x64\\Release\\texture.bmp");
+		Triangle* triag1 = new Triangle({ 25.,10.,0. }, { 0.0,0.,200. }, { -50.,0.,0. }, { 0.,-1.,0. }, whMirror, Red);
+		Triangle* triagf1 = new Triangle({ 14.,3.,0. }, { -5.,5.,0. }, { 0.,0.,5. }, { -1.,-1.,0. }, transGreen, transGreen);
+		Triangle* triagf2 = new TexturedTriangle({ -10.,-10.,0. }, { 1000.,0.,0. }, { 0.,1000.,0. }, { 0.,0.,1. }, image, White, White);
+		size_t n = 1500;
+		AmbientLighter* amb = new AmbientLighter({ 0,0,0 }, AmbL);
+		PointLighter* pwh1 = new PointLighter({ 6, 4, 5 }, PointLWhite);
+		PointLighter* pwh2 = new PointLighter({ 20, 5, 5 }, PointLWhite);
+		Sphere* sp = new Sphere(Point3{ 20, 5, 3 }, 5, transGreen, innertransGreen);
+		Quadrangle* q = new Quadrangle({ 17,-5,0 }, { 0,0,4 }, { 0,5,4 }, { 0,5,0 }, { -1,0,0 }, Red, Red);
+		std::vector<Object3*> vect(piramid(Point3{ 16.,0.,0. }, n, 10.));
+		vect.push_back(triagf1);
+		vect.push_back(triag1);
+		vect.push_back(triagf2);
+		vect.push_back(sp);
+		vect.push_back(q);
+		scene.setObjects({ amb, pwh1, pwh2}, std::move(vect));
+		viewer = Viewer({ 2., -7., 5. }, { 0., 0., 0. });
+		screen = Screen({ 10., -7, 10. }, { -1. ,1. ,0. }, { 0., 0., -1. }, 18., 10., sx, sy);
+		scene.prepareScene();
+	}
+
+	Color* renderEnvy() {
+		return scene.render(screen, viewer);
+	}
+	void moveFrwd() {
+		Point3 loc = screen.getLocation();
+		loc.x += 5;
+		screen.setLocation(loc);
+		loc = viewer.getLocation();
+		loc.x += 5;
+		viewer.setLocation(loc);
+	};
+	void moveBack() {
+
+	}
+	void moveRight() {
+
+	}
+	void moveLeft() {
+
+	}
+	void turnRight() {
+
+	}
+	void turnLeft() {
+
+	}
+} envy;
 
 VOID OnPaint(HDC hdc)
 {
 	Graphics graphics(hdc);
-	int sy = 1000;
-	int sx = 1000;
-	Scene scen(construct(sx, sy));
-	Viewer cam({ 0., -12., 5. }, { 0., 0., 0. });
-	Screen scr({ 10., -10, 10. }, { -1. ,1. ,0. }, { 0., 0., -1. }, 10., 10., sx, sy);
-	scen.prepareScene();
-	auto arr = scen.render(scr, cam);
-	Bitmap myBitmap(sx, sy, sx * 4, PixelFormat32bppARGB, (BYTE*)arr);
-	graphics.DrawImage(&myBitmap, 0, 0, sx, sy);
+	auto arr = envy.renderEnvy();
+	Bitmap myBitmap(envy.sx, envy.sy, envy.sx * 4, PixelFormat32bppARGB, (BYTE*)arr);
+	graphics.DrawImage(&myBitmap, 0, 0, envy.sx, envy.sy);
 }
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -94,7 +151,9 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, PSTR, INT iCmdShow)
 		NULL,                     // window menu handle
 		hInstance,                // program instance handle
 		NULL);                    // creation parameters
-
+	envy.sy = 1000;
+	envy.sx = 1800;
+	envy.buildEnvy();
 	ShowWindow(hWnd, iCmdShow);
 	UpdateWindow(hWnd);
 
@@ -113,9 +172,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 {
 	HDC          hdc;
 	PAINTSTRUCT  ps;
-
+	int key;
 	switch (message)
 	{
+	case WM_KEYDOWN:
+		key = wParam; //Получаем код нажатой клавиши
+		switch (key) {
+			case VK_UP: envy.moveFrwd(); break;
+			case VK_DOWN: envy.moveBack(); break;
+			case VK_RIGHT: envy.moveRight(); break;
+			case VK_LEFT: envy.moveLeft(); break;
+			case VK_NUMPAD4: envy.turnLeft(); break;
+			case VK_NUMPAD6: envy.turnRight(); break;
+		}
+		InvalidateRect(hWnd, 0, TRUE);
 	case WM_PAINT:
 		hdc = BeginPaint(hWnd, &ps);
 		OnPaint(hdc);

@@ -23,14 +23,21 @@ Scene::Scene(Scene&& other)
 	, _lighters(std::move(other._lighters))
 	, _tree(std::move(other._tree)) {}
 
+void Scene::setObjects(std::vector<Lighter*>&& lighters, std::vector<Object3*>&& objects) {
+	_objects = std::move(objects);
+	_lighters = std::move(lighters);
+}
+
 void Scene::prepareScene() {
 	_tree.buildTree();
 	for (size_t i = 0; i < _objects.size(); ++i)
 		if (_objects[i]->isPhantomLighter()) {
 			for (size_t j = 0; j < _lighters.size(); ++j) {
-				PhantomLighter* ptr = _objects[i]->getPhantomLighter(_lighters[j]);
-				if (ptr != nullptr)
-					_phantomLighters.push_back(ptr);
+				std::vector<PhantomLighter*> ptr = _objects[i]->getPhantomLighter(_lighters[j]);
+				if (ptr.size() > 0) {
+					for (auto l: ptr)
+					_phantomLighters.push_back(l);
+				}
 			}
 		}
 }
@@ -53,7 +60,7 @@ Color* Scene::render(Screen& screen, Viewer& viewer) {
 
 void Scene::calcPixel(int x, int y, const Screen& screen, const Viewer& viewer, Color* ptr) {
 	Line ray{ screen.getPixel(x, y), screen.getPixel(x, y) - viewer.getLocation() };
-	lightAttr attr = traceRay(ray, 1);
+	lightAttr attr = traceRay(ray, 5);
 	*ptr = Color(cutColor(attr.red), cutColor(attr.green), cutColor(attr.blue));
 }
 
@@ -62,14 +69,14 @@ lightAttr Scene::traceRay(Line ray, int recDepth){
 	if (isZeroPoint(firstInter))
 		return lightAttr();
 	lightAttr pointClr(getLighting(firstInter));
-	if (firstInter.surface.transparent < 1) {
-		pointClr = alphaBlend(pointClr, traceRay(refract(firstInter, ray), recDepth), firstInter.surface.transparent);
+	if (firstInter.surface.transparent < 1 && recDepth > 0) {
+		pointClr = alphaBlend(pointClr, traceRay(refract(firstInter, ray), recDepth - 1), firstInter.surface.transparent);
 	}
 	
 	if (recDepth > 0) {
 		pointClr = pointClr + getSecondLighting(firstInter, recDepth);
 	}
-	if (firstInter.surface.reflection > 0) {
+	if (firstInter.surface.reflection > 0 && recDepth > -5) {
 		pointClr = alphaBlend(getReflection(firstInter, ray, recDepth), pointClr, firstInter.surface.reflection);
 	}
 	return pointClr;
@@ -90,7 +97,7 @@ lightAttr Scene::getSecondLighting(SurfacedPoint3 p, int recDepth){
 				if (inter == -1) {
 					inter = _tree.isIntersectSegment({ _phantomLighters[i]->lght->getLocation(), point - _phantomLighters[i]->lght->getLocation() });
 					if (inter == -1) {
-						lightAttr curr = _phantomLighters[i]->colorOfPhantomPoint(p, _phantomLighters[i]->lght->colorOfPoint(point));
+						lightAttr curr = _phantomLighters[i]->colorOfPhantomPoint(p, point);
 						total = total + curr;
 					}
 				}
@@ -103,13 +110,13 @@ lightAttr Scene::getSecondLighting(SurfacedPoint3 p, int recDepth){
 
 lightAttr Scene::getReflection(SurfacedPoint3& p, Line ray, int recDepth){
 	Point3 dir{ ray.b - 2 * (p.norm^ray.b)*p.norm };
-	Line newray{ p + (10e-20)*p.norm, dir};
+	Line newray{ p + (10e-30)*p.norm, dir};
 	return traceRay(newray, recDepth - 1);
 }
 
 Line Scene::refract(SurfacedPoint3 p, Line ray) {
 	Point3 newdir = p.surface.refraction*(ray.b + p.norm) + p.norm.inverse();
-	return{ p + (10e-20)*newdir, newdir };
+	return{ p + (10e-30)*newdir, newdir };
 }
 
 Scene::~Scene() {

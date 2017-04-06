@@ -31,19 +31,19 @@ Surface Green(
 Surface White(
 { 255,255,255 },
 1,
-0.4,
+0,
 1
 );
 
 Surface AmbL(
-{ 0.3,0.3,0.3 },
+{ 0.2,0.2,0.2 },
 1,
 0,
 1
 );
 
 Surface PointLWhite(
-{ 50.,50.,50. },
+{ 100.,100.,100. },
 1,
 0,
 1
@@ -52,13 +52,20 @@ Surface PointLWhite(
 Surface whMirror(
 { 250.,0.,20. },
 1,
-0.6,
+0.8,
 1
 );
 
 Surface transGreen(
-{ 1., 250., 1.},
-0.6,
+{ 1, 100, 1},
+0.4,
 0,
 0.2
+);
+
+Surface innertransGreen(
+{ 1, 100, 1 },
+0.4,
+0,
+0.5
 );

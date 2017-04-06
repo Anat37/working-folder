@@ -12,6 +12,7 @@ BVHTree::BVHTree(BVHTree&& other)
 	:_objects(std::move(other._objects))
 	,root(other.root){}
 
+
 BVHTree::BVHNode::BVHNode() {}
 
 BVHTree::BVHNode::BVHNode(AABB3 b, size_t lb, size_t rb, BVHNode* l, BVHNode* r)

@@ -1,6 +1,7 @@
 #pragma once
 #include"AABB3.h"
 #include"surface.h"
+#include<vector>
 
 class Lighter;
 class PhantomLighter;
@@ -22,10 +23,9 @@ public:
 	Object3(Point3 loc);
 	virtual ~Object3();
 	virtual ld isIntercectLine(const Line& ray, SurfacedPoint3& ptr) const = 0;
-	virtual Point3 getNormal(const Point3& p) const = 0;
 	virtual ld getMax(const int dim) const;
 	virtual bool isPhantomLighter() const = 0;
-	virtual PhantomLighter* getPhantomLighter(Lighter* light) const = 0;
+	virtual std::vector<PhantomLighter* > getPhantomLighter(Lighter* light) const = 0;
 	virtual AABB3 box() = 0;
 protected:
 	ld _maxv[3];

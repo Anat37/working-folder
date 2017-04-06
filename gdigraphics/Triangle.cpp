@@ -1,5 +1,6 @@
 #include "Triangle.h"
 #include "PhantomLighter.h"
+#include"RefractionPhantomLighter.h"
 
 
 
@@ -7,8 +8,7 @@ Triangle::Triangle() {}
 
 Triangle::Triangle(const Point3& p1, const Point3& e1, const Point3& e2,
 	const Point3& faceNorm, const Surface& faceSurf, const Surface& backSurf)
-	:_vertex1(p1)
-	,_edge1(e1)
+	:_edge1(e1)
 	,_edge2(e2)
 	,_faceNormal((1 / sqrtl(faceNorm.len2()))*faceNorm)
 	,_faceSurface(faceSurf)
@@ -19,8 +19,21 @@ Triangle::Triangle(const Point3& p1, const Point3& e1, const Point3& e2,
 	setLocation(p1);
 }
 
+Triangle::Triangle(Point3 p1, Point3&& e1, Point3&& e2,
+	Point3 faceNormal, const Surface& faceSurf, const Surface& backSurf)
+	: _edge1(e1)
+	, _edge2(e2)
+	, _faceNormal((1 / sqrtl(faceNormal.len2()))*faceNormal)
+	, _faceSurface(faceSurf)
+	, _backSurface(backSurf) {
+	_maxv[0] = max(max((p1 + e1).x, (p1 + e2).x), p1.x);
+	_maxv[1] = max(max((p1 + e1).y, (p1 + e2).y), p1.y);
+	_maxv[2] = max(max((p1 + e1).z, (p1 + e2).z), p1.z);
+	setLocation(p1);
+}
+
 bool Triangle::isPhantomLighter() const {
-	if (_faceSurface.reflection > 0 || _backSurface.reflection > 0)
+	if (_faceSurface.reflection > 0 || _backSurface.reflection > 0 || _faceSurface.transparent < 1 || _backSurface.transparent < 1)
 		return true;
 	else
 		return false;
@@ -38,7 +51,7 @@ ld Triangle::isIntercectLine(const Line& ray, SurfacedPoint3& ptr) const{
 	inv_det = 1. / det;
 
 	//calculate distance from V1 to ray origin
-	Point3 T = ray.a - _vertex1;
+	Point3 T = ray.a - _location;
 
 	//Calculate u parameter and test bound
 	u = (T ^ P)*inv_det;
@@ -68,10 +81,6 @@ ld Triangle::isIntercectLine(const Line& ray, SurfacedPoint3& ptr) const{
 	return -1;
 }
 
-Point3 Triangle::getNormal(const Point3& p) const{
-	return _faceNormal;
-}
-
 AABB3 Triangle::box() {
 	Point3 loc{
 		min(min((_location + _edge1).x, (_location + _edge2).x), _location.x),
@@ -86,17 +95,33 @@ AABB3 Triangle::box() {
 	return AABB3(loc, edge);
 }
 
-PhantomLighter* Triangle::getPhantomLighter(Lighter* light) const {
-	if (!light->canCreatePhantom())
-		return nullptr;
-	Point3 dir(light->getLocation() - _location);
-	ld x = dir^_faceNormal;
-	if ((sign(x) == 1 && _faceSurface.reflection > 0) || (sign(x) == -1 && _backSurface.reflection > 0)) {
-		Point3 loc(dir - 2 * x *_faceNormal);
-		PhantomLighter* ptr = new PhantomLighter(loc + _location, light->attr, this, light);
-		return ptr;
+std::vector<PhantomLighter* > Triangle::getPhantomLighter(Lighter* light) const {
+	std::vector<PhantomLighter* > res;
+	if (light->canCreatePhantom() && (_faceSurface.reflection > 0 || _backSurface.reflection > 0)) {
+		Point3 dir(light->getLocation() - _location);
+		ld x = dir^_faceNormal;
+		if ((sign(x) == 1 && _faceSurface.reflection > 0) || (sign(x) == -1 && _backSurface.reflection > 0)) {
+			Point3 loc(dir - 2 * x *_faceNormal);
+			PhantomLighter* ptr = new PhantomLighter(loc + _location, this, light);
+			res.push_back(ptr);
+		}
 	}
-	return nullptr;
+	if (light->canCreatePhantom() && (_faceSurface.transparent < 1 || _backSurface.transparent < 1)) {
+		Point3 dir(_location - light->getLocation());
+		ld x = dir^_faceNormal;
+		if (sign(x) == 1 && _faceSurface.transparent < 1) {
+			Point3 newdir = _faceSurface.refraction*(dir + _faceNormal) + _faceNormal.inverse();
+			PhantomLighter* ptr = new RefractionPhantomLighter(newdir.inverse() + _location, this, light);
+			res.push_back(ptr);
+		}
+		if (sign(x) == -1 && _backSurface.transparent < 1) {
+			Point3 newdir = _backSurface.refraction*(dir + _faceNormal.inverse()) + _faceNormal;
+			newdir = sqrtl(dir.len2() / newdir.len2())*newdir;
+			PhantomLighter* ptr = new RefractionPhantomLighter(newdir.inverse() + _location, this, light);
+			res.push_back(ptr);
+		}
+	}
+	return res;
 }
 
 Triangle::~Triangle() {}
