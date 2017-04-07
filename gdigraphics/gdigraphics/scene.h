@@ -13,7 +13,7 @@ public:
 
 	void prepareScene();
 	void setObjects(std::vector<Lighter*>&& lighters, std::vector<Object3*>&& objects);
-	Color* render(Screen& screen, Viewer& viewer);
+	Color* render(Screen& screen, Viewer& viewer, int k);
 	~Scene();
 private:
 	std::vector<Lighter*> _lighters;
@@ -24,7 +24,7 @@ private:
 	lightAttr getSecondLighting(SurfacedPoint3 p, int recDepth);
 	lightAttr getReflection(SurfacedPoint3& p, Line ray, int recDepth);
 	Line Scene::refract(SurfacedPoint3 p, Line ray);
-	void calcPixel(int x, int y, const Screen& scr, const Viewer& viewer, Color* ptr);
+	void calcPixel(int x, int y, const Screen& scr, const Viewer& viewer, lightAttr* ptr);
 	lightAttr traceRay(Line ray, int recDepth);
 };
 

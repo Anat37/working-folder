@@ -42,26 +42,41 @@ void Scene::prepareScene() {
 		}
 }
 
-Color* Scene::render(Screen& screen, Viewer& viewer) {
+Color* Scene::render(Screen& screen, Viewer& viewer, int k) {
 	int sizeX = screen.getPixX();
 	int sizeY = screen.getPixY();
-	Color* ptr = new Color[sizeY*sizeX];
+	screen.setPixX(sizeX*k);
+	screen.setPixY(sizeY*k);
+	lightAttr* before = new lightAttr[sizeY*k*sizeX*k];
+	Color* final = new Color[sizeY*sizeX];
 	for (int x = 0; x < sizeX; ++x) {
-		std::vector<std::future<void> > pixes;
+		std::vector<std::vector<std::future<void> >> pixes;
+		pixes.resize(sizeY);
 		for (int y = 0; y < sizeY; ++y) {
-			pixes.push_back(threadPool.submit(std::bind(&Scene::calcPixel, this, x, y, screen, viewer, ptr + x + y*sizeX)));
+			for (int i = 0; i < k; ++i)
+				for (int j = 0; j < k; ++j)
+					pixes[y].push_back(threadPool.submit(std::bind(&Scene::calcPixel, this, x*k + i, y*k + j, screen, viewer, before + x*k + i + (y*k + j)*sizeX)));
 		}
 		for (int y = 0; y < sizeY; ++y) {
-			pixes[y].get();
+			lightAttr total;
+			for (int i = 0; i < k; ++i) 
+				for (int j = 0; j < k; ++j) {
+					pixes[y][i*k + j].get();
+					total = total + before[x*k + i + (y*k + j)*sizeX];
+				}
+			total = (1./(k*k))*total;
+			final[x + y*sizeX] = Color(cutColor(total.red), cutColor(total.green), cutColor(total.blue));
 		}
 	}
-	return ptr;
+	screen.setPixX(sizeX);
+	screen.setPixY(sizeY);
+	return final;
 }
 
-void Scene::calcPixel(int x, int y, const Screen& screen, const Viewer& viewer, Color* ptr) {
+void Scene::calcPixel(int x, int y, const Screen& screen, const Viewer& viewer, lightAttr* ptr) {
 	Line ray{ screen.getPixel(x, y), screen.getPixel(x, y) - viewer.getLocation() };
 	lightAttr attr = traceRay(ray, 5);
-	*ptr = Color(cutColor(attr.red), cutColor(attr.green), cutColor(attr.blue));
+	*ptr = lightAttr(cutColor(attr.red), cutColor(attr.green), cutColor(attr.blue));
 }
 
 lightAttr Scene::traceRay(Line ray, int recDepth){

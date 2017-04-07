@@ -34,26 +34,32 @@ Point3 Screen::getPixel(int x, int y) const {
 
 void Screen::setXAxis(Point3 x) {
 	_xAxis = x;
+	recalcDelt();
 }
 
 void Screen::setYAxis(Point3 y) {
 	_yAxis = y;
+	recalcDelt();
 }
 
 void Screen::setWidth(ld w) {
 	_width = w;
+	recalcDelt();
 }
 
 void Screen::setHeigth(ld h) {
 	_heigth = h;
+	recalcDelt();
 }
 
 void Screen::setPixX(int pix) {
 	_pixX = pix;
+	recalcDelt();
 }
 
 void Screen::setPixY(int pix) {
 	_pixY = pix;
+	recalcDelt();
 }
 
 Screen::Screen(Point3 loc, Point3 xAx, Point3 yAx, ld width, ld heigth, int pixX, int pixY)

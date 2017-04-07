@@ -78,7 +78,7 @@ public:
 	}
 
 	Color* renderEnvy() {
-		return scene.render(screen, viewer);
+		return scene.render(screen, viewer, 3);
 	}
 	void moveFrwd() {
 		Point3 loc = screen.getLocation();
