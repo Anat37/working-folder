@@ -8,11 +8,14 @@
 #include"Sphere.h"
 #include"Quadrangle.h"
 #include"TexturedTriangle.h"
+#include"andObject3.h"
+#include"orObject3.h"
+#include"xorObject3.h"
 
 using namespace cimg_library;
 
 extern template class ThreadPool<void>;
-ThreadPool<void> threadPool(7); //Num of threads
+ThreadPool<void> threadPool(3); //Num of threads
 
 std::vector<Object3*> piramid(Point3 loc, int cnt, ld edge) {
 	std::vector<Object3*> lst;
@@ -55,47 +58,64 @@ public:
 	int sx;
 
 	void buildEnvy() {
-		CImg<unsigned char>* image = new CImg<unsigned char>("D:\\Repos\\workf\\gdigraphics\\gdigraphics\\x64\\Release\\texture.bmp");
+		CImg<unsigned char>* image = new CImg<unsigned char>("C:\\Users\\Anatoly\\Documents\\Visual Studio 2015\\Projects\\gdigraphics\\x64\\Release\\texture.bmp");
 		Triangle* triag1 = new Triangle({ 25.,10.,0. }, { 0.0,0.,200. }, { -50.,0.,0. }, { 0.,-1.,0. }, whMirror, Red);
 		Triangle* triagf1 = new Triangle({ 14.,3.,0. }, { -5.,5.,0. }, { 0.,0.,5. }, { -1.,-1.,0. }, transGreen, transGreen);
-		Triangle* triagf2 = new TexturedTriangle({ -10.,-10.,0. }, { 1000.,0.,0. }, { 0.,1000.,0. }, { 0.,0.,1. }, image, White, White);
-		size_t n = 1500;
+		Triangle* triagf2 = new Triangle({ -10.,-10.,0. }, { 1000.,0.,0. }, { 0.,1000.,0. }, { 0.,0.,1. }, White, White);
+		size_t n = 150;
 		AmbientLighter* amb = new AmbientLighter({ 0,0,0 }, AmbL);
 		PointLighter* pwh1 = new PointLighter({ 6, 4, 5 }, PointLWhite);
-		PointLighter* pwh2 = new PointLighter({ 20, 5, 5 }, PointLWhite);
-		Sphere* sp = new Sphere(Point3{ 20, 5, 3 }, 5, transGreen, innertransGreen);
-		Quadrangle* q = new Quadrangle({ 17,-5,0 }, { 0,0,4 }, { 0,5,4 }, { 0,5,0 }, { -1,0,0 }, Red, Red);
-		std::vector<Object3*> vect(piramid(Point3{ 16.,0.,0. }, n, 10.));
-		vect.push_back(triagf1);
+		PointLighter* pwh2 = new PointLighter({ 0, 5, 5 }, PointLWhite);
+		Sphere* sp = new Sphere(Point3{ 10, 5, 3 }, 5, Green, Green);
+		Quadrangle* q = new Quadrangle({ 10,-2,0 }, { 0,0,4 }, { 0,5,4 }, { 0,5,0 }, { -1,0,0 }, Red, Red);
+		std::vector<Object3*> vect;//(piramid(Point3{ 16.,0.,0. }, n, 10.));
+		andObject3* ando = new andObject3(new xorObject3(sp, q), q);
+		//vect.push_back(triagf1);
 		vect.push_back(triag1);
 		vect.push_back(triagf2);
-		vect.push_back(sp);
-		vect.push_back(q);
+		vect.push_back(ando);
+		//vect.push_back(sp);
+		//vect.push_back(q);
 		scene.setObjects({ amb, pwh1, pwh2}, std::move(vect));
-		viewer = Viewer({ 2., -7., 5. }, { 0., 0., 0. });
+		viewer = Viewer({ 2., -7., 5. }, { 3.5, 1., 0. });
 		screen = Screen({ 10., -7, 10. }, { -1. ,1. ,0. }, { 0., 0., -1. }, 18., 10., sx, sy);
 		scene.prepareScene();
 	}
 
 	Color* renderEnvy() {
-		return scene.render(screen, viewer, 3);
+		return scene.render(screen, viewer, 1);
 	}
 	void moveFrwd() {
 		Point3 loc = screen.getLocation();
-		loc.x += 5;
+		loc = loc + viewer.getDirection();
 		screen.setLocation(loc);
 		loc = viewer.getLocation();
-		loc.x += 5;
+		loc = loc + viewer.getDirection();
 		viewer.setLocation(loc);
 	};
 	void moveBack() {
-
+		Point3 loc = screen.getLocation();
+		loc = loc - viewer.getDirection();
+		screen.setLocation(loc);
+		loc = viewer.getLocation();
+		loc = loc - viewer.getDirection();
+		viewer.setLocation(loc);
 	}
 	void moveRight() {
-
+		Point3 loc = screen.getLocation();
+		loc = loc - (viewer.getDirection()* Point3{ 0, 0, 1 });
+		screen.setLocation(loc);
+		loc = viewer.getLocation();
+		loc = loc - (viewer.getDirection()* Point3 { 0, 0, 1 });
+		viewer.setLocation(loc);
 	}
 	void moveLeft() {
-
+		Point3 loc = screen.getLocation();
+		loc = loc + (viewer.getDirection()* Point3 { 0, 0, 1 });
+		screen.setLocation(loc);
+		loc = viewer.getLocation();
+		loc = loc + (viewer.getDirection()* Point3 { 0, 0, 1 });
+		viewer.setLocation(loc);
 	}
 	void turnRight() {
 
@@ -151,8 +171,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, PSTR, INT iCmdShow)
 		NULL,                     // window menu handle
 		hInstance,                // program instance handle
 		NULL);                    // creation parameters
-	envy.sy = 1000;
-	envy.sx = 1800;
+	envy.sy = 500;
+	envy.sx = 900;
 	envy.buildEnvy();
 	ShowWindow(hWnd, iCmdShow);
 	UpdateWindow(hWnd);

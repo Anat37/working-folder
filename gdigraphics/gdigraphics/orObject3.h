@@ -8,11 +8,11 @@ class orObject3 : public Object3 {
 public:
 	orObject3();
 	orObject3(Object3* f, Object3* s);
-	ld isIntercectLine(const Line& ray, SurfacedPoint3& ptr) const = 0;
+	ld isIntercectLine(const Line& ray, SurfacedPoint3& ptr) const;
 	ld getMax(const int dim) const;
-	bool isPhantomLighter() const = 0;
-	std::vector<PhantomLighter* > getPhantomLighter(Lighter* light) const = 0;
-	AABB3 box() = 0;
+	bool isPhantomLighter() const;
+	std::vector<PhantomLighter* > getPhantomLighter(Lighter* light) const;
+	AABB3 box();
 	~orObject3();
 private:
 	Object3* _first;
