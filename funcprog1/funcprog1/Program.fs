@@ -28,6 +28,9 @@ let tailorA x : Result =
         else calc (accres + nMember k) (k + 1.)
     calc 0. 1. 
 
+
+
+
 let printTailor () = 
     [a .. (b-a)/n .. b] 
     |> List.map (fun x -> let (firstRes, firstCou), (secondRes, secondCou) = tailor x, tailorA x in (x, firstRes, firstCou, secondRes, secondCou, fTailor x))
