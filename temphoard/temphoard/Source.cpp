@@ -11,13 +11,16 @@ void func() {
 		for (int j = 0; j < 1000; ++j) {
 			vect.push_back((int*)mtalloc(50 * sizeof(int)));
 		}
+		//std::cout << "allocated" <<std::endl;
 		for (int j = 0; j < 1000; ++j) {
 			mtfree(vect[j]);
 		}
+		//std::cout << "freed" <<std::endl;
 	}
 	std::cout << "finished";
 }
 
+extern const size_t info_size;
 int main() {
 	std::thread t1(func);
 	std::thread t2(func);
