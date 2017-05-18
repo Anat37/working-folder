@@ -6,7 +6,7 @@ extern void* mtalloc(size_t bytes);
 extern void mtfree(void* ptr);
 
 void func() {
-	for (int i = 0; i < 10; ++i) {
+	for (int i = 0; i < 1000; ++i) {
 		std::vector<int*> vect;
 		for (int j = 0; j < 1000; ++j) {
 			vect.push_back((int*)mtalloc(50 * sizeof(int)));
@@ -20,7 +20,6 @@ void func() {
 	std::cout << "finished";
 }
 
-extern const size_t info_size;
 int main() {
 	std::thread t1(func);
 	std::thread t2(func);
