@@ -1,62 +1,63 @@
 #include "HeapManager.h"
 #include <ctime>
-const size_t heapSize = 1024 * 1024 * 16;
+const size_t heapSize = 1024 * 1024 * 512;
 
-void testFragmentation() {
+void testFragmentation(size_t size) {
 	CHeapManager myManager;
 	std::vector<void*> ptrs;
 	size_t alloced = 0;
-	ptrs.reserve(heapSize / 4);
+	ptrs.reserve(heapSize / size);
 	clock_t begin = clock();
-	myManager.create(1024 * 16, heapSize);
-	for (int i = 0; i < heapSize/8; ++i) {
-		void* ptr = myManager.alloc(4);
+	myManager.create(1024 * 64, heapSize);
+	for (int i = 0; i < heapSize/size; ++i) {
+		void* ptr = myManager.alloc(size);
 		if (ptr != nullptr) {
-			alloced += 4;
+			alloced += size;
 			ptrs.push_back(ptr);
 		}
 	}
-	for (int j = 0; j < 2; ++j) {
-		for (int i = 0; i < heapSize / 64; ++i) {
+	for (int j = 0; j < 4; ++j) {
+		for (int i = 0; i < (heapSize / size) / 16; ++i) {
 			int ind = rand() % ptrs.size();
 			myManager.free(ptrs[ind]);
 			ptrs.erase(ptrs.begin() + ind);
 		}
-		for (int i = 0; i < heapSize / 64; ++i) {
-			void* ptr = myManager.alloc(8);
+		for (int i = 0; i < (heapSize / size) / 16; ++i) {
+			void* ptr = myManager.alloc(size*3);
 			if (ptr != nullptr)
-				alloced += 8;
+				alloced += size*3;
 			ptrs.push_back(ptr);
 		}
 	}
-	myManager.destroy();
+	
 	clock_t end = clock();
+	myManager.destroy();
 	double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 	std::cout << elapsed_secs << std::endl;
-	std::cout << "successfully allocated myheap" << alloced << std::endl;
+	std::cout << "successfully allocated myheap " << alloced << std::endl;
 	alloced = 0;
 	ptrs.clear();
 	
 
 	begin = clock();
-	HANDLE heap = HeapCreate(0, 1024 * 16, heapSize);
-	for (int i = 0; i < heapSize / 8; ++i) {
-		void* ptr = HeapAlloc(heap, 0, 4);
+	HANDLE heap = HeapCreate(0, 1024 * 64, heapSize);
+	for (int i = 0; i < heapSize / size; ++i) {
+		void* ptr = HeapAlloc(heap, 0, size);
 		if (ptr != nullptr) {
-			alloced += 4;
+			alloced += size;
 			ptrs.push_back(ptr);
 		}
 	}
-	for (int j = 0; j < 2; ++j) {
-		for (int i = 0; i < heapSize / 64; ++i) {
+	for (int j = 0; j < 4; ++j) {
+		for (int i = 0; i < (heapSize / size) / 16; ++i) {
 			int ind = rand() % ptrs.size();
 			HeapFree(heap, 0, ptrs[ind]);
 			ptrs.erase(ptrs.begin() + ind);
 		}
-		for (int i = 0; i < heapSize / 64; ++i) {
-			void* ptr = HeapAlloc(heap, 0, 8);
+		for (int i = 0; i < (heapSize / size) / 16; ++i) {
+			void* ptr = HeapAlloc(heap, 0, size*3);
 			if (ptr != nullptr)
-				alloced += 8;
+				alloced += size*3;
 			ptrs.push_back(ptr);
 		}
 	}
@@ -64,39 +65,40 @@ void testFragmentation() {
 	end = clock();
 	elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 	std::cout << elapsed_secs << std::endl;
-	std::cout << "successfully allocated standard heap" << alloced << std::endl;
+	std::cout << "successfully allocated standard heap " << alloced << std::endl;
 
 	system("pause");
 }
 
-void smallAllocs() {
+void allocsTest(size_t size) {
 	CHeapManager myManager;
 	std::vector<void*> ptrs;
 	size_t alloced = 0;
-	ptrs.reserve(heapSize / 4);
+	ptrs.reserve(heapSize / size);
 	clock_t begin = clock();
-	myManager.create(1024 * 16, heapSize);
-	for (int i = 0; i < heapSize / 8; ++i) {
-		void* ptr = myManager.alloc(4);
+	myManager.create(1024 * 64, heapSize);
+	for (int i = 0; i < heapSize / size; ++i) {
+		void* ptr = myManager.alloc(size);
 		if (ptr != nullptr) {
-			alloced += 4;
+			alloced++;
 			ptrs.push_back(ptr);
 		}
 	}
 
-	myManager.destroy();
 	clock_t end = clock();
+	myManager.destroy();
 	double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 	std::cout << elapsed_secs << std::endl;
 	std::cout << "successfully allocated myheap " << alloced << std::endl;
+
 	alloced = 0;
 	ptrs.clear();
 	begin = clock();
-	HANDLE heap = HeapCreate(0, 1024 * 16, heapSize);
-	for (int i = 0; i < heapSize / 8; ++i) {
-		void* ptr = HeapAlloc(heap, 0, 4);
+	HANDLE heap = HeapCreate(0, 1024 * 64, heapSize);
+	for (int i = 0; i < heapSize / size; ++i) {
+		void* ptr = HeapAlloc(heap, 0, size);
 		if (ptr != nullptr) {
-			alloced += 4;
+			alloced++;
 			ptrs.push_back(ptr);
 		}
 	}
@@ -104,56 +106,15 @@ void smallAllocs() {
 	end = clock();
 	elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 	std::cout << elapsed_secs << std::endl;
-	std::cout << "successfully allocated standard heap" << alloced << std::endl;
-
-	system("pause");
-}
-
-void bigAllocs() {
-	CHeapManager myManager;
-	std::vector<void*> ptrs;
-	size_t alloced = 0;
-	ptrs.reserve(heapSize / 4);
-	clock_t begin = clock();
-	myManager.create(1024 * 16, heapSize);
-	for (int i = 0; i < heapSize / 8; ++i) {
-		void* ptr = myManager.alloc(256);
-		if (ptr != nullptr) {
-			alloced += 256;
-			ptrs.push_back(ptr);
-		}
-	}
-
-	myManager.destroy();
-	clock_t end = clock();
-	double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-	std::cout << elapsed_secs << std::endl;
-	std::cout << "successfully allocated myheap " << alloced << std::endl;
-	alloced = 0;
-	ptrs.clear();
-	begin = clock();
-	HANDLE heap = HeapCreate(0, 1024 * 16, heapSize);
-	for (int i = 0; i < heapSize / 8; ++i) {
-		void* ptr = HeapAlloc(heap, 0, 256);
-		if (ptr != nullptr) {
-			alloced += 256;
-			ptrs.push_back(ptr);
-		}
-	}
-	HeapDestroy(heap);
-	end = clock();
-	elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-	std::cout << elapsed_secs << std::endl;
-	std::cout << "successfully allocated standard heap" << alloced << std::endl;
+	std::cout << "successfully allocated standard heap " << alloced << std::endl;
 
 	system("pause");
 }
 
 
 int main() {
-	//testFragmentation();
-	//smallAllocs();
-	bigAllocs();
+	//testFragmentation(32);
+	allocsTest(32);
 	/*CHeapManager man;
 	man.create(1024 * 16, 1024 * 1024 * 512);
 	std::vector<void*> ptrs;

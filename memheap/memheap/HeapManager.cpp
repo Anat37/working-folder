@@ -2,31 +2,33 @@
 
 
 
-CHeapManager::CHeapManager()
-{
-}
+CHeapManager::CHeapManager() {}
 
 void CHeapManager::create(size_t commitSize, size_t maxSize) {
 	_heapSize = sizePageRound(maxSize);
-	_memoryPtr = VirtualAlloc(
-		NULL,                 // System selects address
-		_heapSize, // Size of allocation
-		MEM_RESERVE,          // Allocate reserved pages
-		PAGE_EXECUTE_READWRITE);
+	_memoryPtr = VirtualAlloc(NULL, _heapSize, MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 	commitSize = sizePageRound(commitSize);
-	VirtualAlloc(
-		_memoryPtr,                 // System selects address
-		commitSize, // Size of allocation
-		MEM_COMMIT,          // Allocate reserved pages
-		PAGE_EXECUTE_READWRITE);
+	VirtualAlloc(_memoryPtr, commitSize,	MEM_COMMIT,	PAGE_EXECUTE_READWRITE);
+	_pages.assign(_heapSize / pageSize, -1);
 	for (int i = 0; i < commitSize / pageSize; ++i) {
 		_pages.push_back(0);
 	}
-	for (int i = commitSize / pageSize; i < _heapSize / pageSize; ++i) {
-		_pages.push_back(-1);
-	}
 	_bigBlocksSizes.insert(std::make_pair(_heapSize, _memoryPtr));
 	_bigBlocksPtr.insert(std::make_pair(_memoryPtr, _heapSize));
+}
+
+size_t CHeapManager::sizeBlockRound(size_t size) {
+	size_t resSize = size + sizeof(int);
+	if (resSize % 4 != 0) {
+		resSize = 4 * ((resSize / 4) + 1);
+	}
+	return resSize;
+}
+
+size_t CHeapManager::sizePageRound(size_t size) {
+	if (size % pageSize == 0)
+		return size;
+	return pageSize * ((size / pageSize) + 1);
 }
 
 void * CHeapManager::alloc(size_t size) {
@@ -38,56 +40,6 @@ void * CHeapManager::alloc(size_t size) {
 	}
 }
 
-void CHeapManager::free(void * mem) {
-	if (mem == nullptr)
-		return;
-	size_t size = unWrapPtr(mem);
-	void* initPtr = mem;
-	size_t initSize = size;
-	expandBlock(mem, size);
-	addFreeBlock(mem, size);
-	freePages(initPtr, initSize);
-}
-
-void CHeapManager::destroy() {
-	auto it = _bigBlocksPtr.find(std::make_pair(_memoryPtr, _heapSize));
-	if (it == _bigBlocksPtr.end()) {
-		std::set<std::pair<void*, int>> blocks;
-		for (auto bl : _bigBlocksPtr) {
-			blocks.insert(bl);
-		}
-		for (auto bl : _smallBlocksPtr) {
-			blocks.insert(std::make_pair(bl, *(int*)bl));
-		}
-		char* currPtr = (char*)_memoryPtr;
-		for (auto bl : blocks) {
-			if (bl.first == currPtr) {
-				currPtr += bl.second;
-			} else {
-				std::cout << "allocated " << (char*)bl.first - currPtr << " bytes at address " << bl.first << std::endl;
-				currPtr = (char*)bl.first + bl.second;
-			}
-		}
-	}
-	VirtualFree(_memoryPtr, _heapSize, MEM_RELEASE);
-}
-
-
-CHeapManager::~CHeapManager(){}
-
-size_t CHeapManager::sizeBlockRound(size_t size) {
-	size_t resSize = size + sizeof(int);
-	if (resSize % 4 != 0)
-		resSize = 4 * ((resSize / 4) + 1);
-	return resSize;
-}
-
-size_t CHeapManager::sizePageRound(size_t size) {
-	if (size % pageSize == 0)
-		return size;
-	return pageSize * ((size / pageSize) + 1);
-}
-
 void* CHeapManager::allocateBigBlock(size_t size) {
 	auto bigIter = _bigBlocksSizes.lower_bound(std::make_pair(size, nullptr));
 	if (bigIter == _bigBlocksSizes.end())
@@ -97,8 +49,7 @@ void* CHeapManager::allocateBigBlock(size_t size) {
 	int blockSize = bigIter->first;
 	_bigBlocksSizes.erase(bigIter);
 	_bigBlocksPtr.erase(std::make_pair(ptr, blockSize));
-	if (blockSize > size)
-		addFreeBlock((char*)ptr + size, blockSize - size);
+	addFreeBlock((char*)ptr + size, blockSize - size);
 	return wrapPtr(ptr, size);
 }
 
@@ -112,13 +63,35 @@ void* CHeapManager::allocateSmallBlock(size_t size) {
 		int blockSize = *(int*)*iter;
 		_smallBlocksSizes.erase(iter);
 		_smallBlocksPtr.erase(ptr);
-		if (blockSize > size)
-			addFreeBlock((char*)ptr + size, blockSize - size);
+		addFreeBlock((char*)ptr + size, blockSize - size);
 		return wrapPtr(ptr, size);
 	}
 }
 
+void CHeapManager::mapPages(void * ptr, size_t size, std::function<void(int)> process) {
+	int startPage = ((char*)ptr - _memoryPtr) / pageSize;
+	int endPage = ((char*)ptr - _memoryPtr + size - 1) / pageSize;
+	for (int i = startPage; i <= endPage; ++i) {
+		process(i);
+	}
+}
+
+
+void CHeapManager::musePages(void* ptr, size_t size) {
+	mapPages(ptr, size,
+		[this](int ind) {
+			if (_pages[ind] == -1) {
+				void* nptr = VirtualAlloc((char*)_memoryPtr + ind * pageSize, pageSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+				_pages[ind] = 0;
+			}
+			_pages[ind]++;
+		}
+	);
+}
+
 void CHeapManager::addFreeBlock(void * ptr, size_t size) {
+	if (size == 0)
+		return;
 	if (size < pageSize) {
 		*(int*)ptr = size;
 		_smallBlocksSizes.insert(ptr);
@@ -140,31 +113,27 @@ size_t CHeapManager::unWrapPtr(void*& ptr) {
 	return *(int*)ptr;
 }
 
-void CHeapManager::usePages(void* ptr, size_t size) {
-	int startPage = ((char*)ptr - _memoryPtr) / pageSize;
-	int endPage = ((char*)ptr - _memoryPtr + size - 1) / pageSize;
-	for (int i = startPage; i <= endPage; ++i) {
-		if (_pages[i] == -1) {
-			void* nptr = VirtualAlloc((char*)_memoryPtr + i * pageSize,	pageSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-			if (nptr != (char*)_memoryPtr + i * pageSize) {
-				std::cout << "commit problem" << nptr << "  " << (char*)_memoryPtr + i * pageSize << "  " << GetLastError() << std::endl;
-			}
-			_pages[i] = 0;
-		}
-		_pages[i]++;
-	}
+void CHeapManager::free(void * mem) {
+	if (mem == nullptr)
+		return;
+	size_t size = unWrapPtr(mem);
+	void* initPtr = mem;
+	size_t initSize = size;
+	expandBlock(mem, size);
+	addFreeBlock(mem, size);
+	freePages(initPtr, initSize);
 }
 
-void CHeapManager::freePages(void * ptr, size_t size) {
-	int startPage = ((char*)ptr - _memoryPtr) / pageSize;
-	int endPage = ((char*)ptr - _memoryPtr + size - 1) / pageSize;
-	for (int i = startPage; i <= endPage; ++i) {
-		_pages[i]--;
-		if (_pages[i] == 0) {
-			VirtualFree((char*)_memoryPtr + i * pageSize, pageSize, MEM_DECOMMIT);
-			_pages[i] = -1;
+void CHeapManager::mfreePages(void * ptr, size_t size) {
+	mapPages(ptr, size,
+		[this](int ind) {
+			_pages[ind]--;
+			if (_pages[ind] == 0) {
+				VirtualFree((char*)_memoryPtr + ind * pageSize, pageSize, MEM_DECOMMIT);
+				_pages[ind] = -1;
+			}
 		}
-	}
+	);
 }
 
 void CHeapManager::expandBlock(void *& ptr, size_t& size) {
@@ -209,3 +178,56 @@ void CHeapManager::expandLeft(void *& ptr, size_t & size) {
 		}
 	}
 }
+
+void CHeapManager::destroy() {
+	auto it = _bigBlocksPtr.find(std::make_pair(_memoryPtr, _heapSize));
+	if (it == _bigBlocksPtr.end()) {
+		//std::cout << "free problem" << std::endl;
+		std::set<std::pair<void*, int>> blocks;
+		for (auto bl : _bigBlocksPtr) {
+			blocks.insert(bl);
+		}
+		for (auto bl : _smallBlocksPtr) {
+			blocks.insert(std::make_pair(bl, *(int*)bl));
+		}
+		char* currPtr = (char*)_memoryPtr;
+		for (auto bl : blocks) {
+			if (bl.first == currPtr) {
+				currPtr += bl.second;
+			} else {
+				//std::cout << "allocated " << (char*)bl.first - currPtr << " bytes at address " << bl.first << std::endl;
+				currPtr = (char*)bl.first + bl.second;
+			}
+		}
+	}
+	VirtualFree(_memoryPtr, _heapSize, MEM_RELEASE);
+}
+
+void CHeapManager::usePages(void* ptr, size_t size) {
+	int startPage = ((char*)ptr - _memoryPtr) / pageSize;
+	int endPage = ((char*)ptr - _memoryPtr + size - 1) / pageSize;
+	for (int i = startPage; i <= endPage; ++i) {
+		if (_pages[i] == -1) {
+			void* nptr = VirtualAlloc((char*)_memoryPtr + i * pageSize, pageSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+			if (nptr != (char*)_memoryPtr + i * pageSize) {
+				std::cout << "commit problem" << nptr << "  " << (char*)_memoryPtr + i * pageSize << "  " << GetLastError() << std::endl;
+			}
+			_pages[i] = 0;
+		}
+		_pages[i]++;
+	}
+}
+
+void CHeapManager::freePages(void * ptr, size_t size) {
+	int startPage = ((char*)ptr - _memoryPtr) / pageSize;
+	int endPage = ((char*)ptr - _memoryPtr + size - 1) / pageSize;
+	for (int i = startPage; i <= endPage; ++i) {
+		_pages[i]--;
+		if (_pages[i] == 0) {
+			VirtualFree((char*)_memoryPtr + i * pageSize, pageSize, MEM_DECOMMIT);
+			_pages[i] = -1;
+		}
+	}
+}
+
+CHeapManager::~CHeapManager(){}

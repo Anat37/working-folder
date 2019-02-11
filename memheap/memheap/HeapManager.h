@@ -3,6 +3,7 @@
 #include <set>
 #include <Windows.h>
 #include <iostream>
+#include <functional>
 
 const size_t pageSize = 1024 * 4;
 
@@ -36,9 +37,9 @@ private:
 	std::set<void*> _smallBlocksPtr;
 	std::set< std::pair<void*, int> > _bigBlocksPtr;
 
-	size_t sizeBlockRound(size_t size);
+	static size_t sizeBlockRound(size_t size);
 
-	size_t sizePageRound(size_t size);
+	static size_t sizePageRound(size_t size);
 
 	void* allocateBigBlock(size_t size);
 
@@ -46,9 +47,9 @@ private:
 
 	void addFreeBlock(void* ptr, size_t size);
 	
-	void* wrapPtr(void* ptr, size_t size);
+	static void* wrapPtr(void* ptr, size_t size);
 
-	size_t unWrapPtr(void*& ptr);
+	static size_t unWrapPtr(void*& ptr);
 
 	void usePages(void* ptr, size_t size);
 
@@ -59,5 +60,11 @@ private:
 	void expandRight(void*& ptr, size_t& size);
 
 	void expandLeft(void*& ptr, size_t& size);
+
+	void mapPages(void* ptr, size_t size, std::function<void(int)> process);
+
+	void musePages(void* ptr, size_t size);
+
+	void mfreePages(void* ptr, size_t size);
 };
 
